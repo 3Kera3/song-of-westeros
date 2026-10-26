@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Wiki officiel du serveur Garry's Mod Game of Thrones RP. Règlements, maisons et chroniques.">
+  <title>Les Chroniques de Westeros — Wiki RP</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#contenu">Aller au contenu</a>
+  <header class="topbar">
+    <a class="brand" href="index.html" aria-label="Accueil du wiki">
+      <span class="brand-mark">✦</span><span><strong>LES CHRONIQUES</strong><small>WIKI DU ROYAUME</small></span>
+    </a>
+    <button class="menu-toggle" id="menu-toggle" aria-expanded="false" aria-controls="main-nav">Menu ☰</button>
+    <nav id="main-nav" class="main-nav">
+      <a class="active" href="index.html">Accueil</a>
+      <a href="reglements/general.html">Règlements</a>
+      <a href="maisons/index.html">Maisons nobles</a>
+      <a href="historique.html">Historique</a>
+    </nav>
+  </header>
+
+  <main id="contenu">
+    <section class="hero">
+      <div class="hero-inner">
+        <p class="eyebrow">Westeros · Avant la Rébellion Feunoyr</p>
+        <h1>Les lois du royaume,<br><em>la mémoire des maisons.</em></h1>
+        <p class="hero-copy">Le codex de référence du serveur. Consultez les règles, découvrez les grandes maisons et préparez votre histoire dans les Sept Couronnes.</p>
+        <div class="hero-actions">
+          <a class="button button-gold" href="reglements/index.html">Consulter les règlements</a>
+          <a class="button button-quiet" href="maisons/index.html">Découvrir les maisons</a>
+        </div>
+        <div class="hero-note"><span class="status-dot"></span> Document communautaire · Version initiale à compléter</div>
+      </div>
+    </section>
+
+    <section class="page-section">
+      <div class="section-heading">
+        <div><p class="eyebrow">Le codex</p><h2>Explorer le wiki</h2></div>
+        <p>Les textes marqués « À compléter » sont des emplacements prévus pour vos règlements existants.</p>
+      </div>
+      <div class="feature-grid">
+        <a class="feature-card" href="reglements/index.html"><span class="feature-icon">§</span><h3>Règlements</h3><p>Règles générales, conduite RP et procédures du serveur.</p><span class="card-link">Ouvrir le codex →</span></a>
+        <a class="feature-card" href="maisons/index.html"><span class="feature-icon">♜</span><h3>Maisons nobles</h3><p>Fiches de maisons, territoires, alliances et traditions.</p><span class="card-link">Parcourir les maisons →</span></a>
+        <a class="feature-card" href="historique.html"><span class="feature-icon">◷</span><h3>Historique</h3><p>Retrouvez les changements apportés aux règles du serveur.</p><span class="card-link">Voir les mises à jour →</span></a>
+      </div>
+    </section>
+
+    <section class="page-section search-section">
+      <div class="section-heading"><div><p class="eyebrow">Recherche rapide</p><h2>Que cherchez-vous ?</h2></div></div>
+      <label class="search-box"><span aria-hidden="true">⌕</span><input id="site-search" type="search" placeholder="Ex. : comportement, noblesse, sanctions…" autocomplete="off"><kbd>Entrée</kbd></label>
+      <p class="search-hint">La recherche porte sur les pages répertoriées dans ce prototype. Ajoutez les nouveaux articles dans <code>assets/search-index.js</code>.</p>
+      <div id="search-results" class="search-results" aria-live="polite"></div>
+    </section>
+
+    <section class="page-section notice">
+      <div class="notice-symbol">✧</div><div><h2>Un wiki à votre image</h2><p>Remplacez les exemples par les textes officiels du serveur. Les règles affichées ici sont des modèles de structure, pas des règles déjà validées par votre équipe.</p></div>
+    </section>
+  </main>
+
+  <footer class="site-footer"><a class="brand footer-brand" href="index.html"><span class="brand-mark">✦</span><span><strong>LES CHRONIQUES</strong><small>WIKI DU ROYAUME</small></span></a><p>Projet communautaire non officiel inspiré de l'univers de Westeros.</p><p class="footer-small">Les contenus et règles du serveur sont sous la responsabilité de son équipe.</p></footer>
+  <script src="assets/search-index.js"></script><script src="assets/app.js"></script>
+</body>
+</html>
