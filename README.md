@@ -68,18 +68,20 @@ GitHub affiche les CSV sous forme de tableau, ce qui aide à vérifier.
 
 ### Carte du monde (Westeros et Essos)
 
-La carte reprend la carte et les données du mod **A Game of Thrones** pour Crusader Kings III :
-régions, territoires, duchés, comtés, châteaux et cités, seigneurs en 183 AC, routes.
+Le fond de carte vient du mod **A Game of Thrones** pour Crusader Kings III, mais **seul le contenu des livres est affiché** :
+tout a été vérifié sur A Wiki of Ice and Fire, et ce que le mod invente a été retiré.
+
+- **Régions** : les Sept Couronnes, le Mur, Au-delà du Mur, et chaque cité libre d'Essos séparément.
+- **Lieux** : uniquement les châteaux, cités, temples et ruines qui existent dans les livres (environ 370).
+- **Peuples et religions** : regroupés selon les livres (Nordiens, Fer-nés, Dorniens... ; Foi des Sept, Anciens Dieux, Dieu Noyé...).
+- **Seigneurs** : seulement ceux de 183 AC qui sont des personnages des livres.
+- **Routes** : seulement les grandes routes (Route Royale, Route de la Rivière, Grand-Route, Route des Roses...).
+
 Les fichiers `donnees/monde/*.json` et `monde/tuiles/` sont générés : pas besoin d'y toucher.
 
-**Noms français** : trois fichiers `Original,Français`, du plus prioritaire au moins prioritaire :
-
-1. `donnees/monde/traductions.csv` : vos corrections (régions, cultures, religions, noms officiels). C'est ici qu'il faut corriger.
-2. `donnees/monde/traductions-mod.csv` : noms propres au mod, traduits à la main.
-3. `donnees/monde/traductions-auto.csv` : châteaux et cités traduits automatiquement (à corriger au besoin dans le fichier 1).
-
-Les noms officiels de la VF (Port-Réal, Vivesaigues, Corneilla...) viennent d'A Wiki of Ice and Fire / La Garde de Nuit.
-Les noms exotiques d'Essos restent tels quels, comme dans les livres.
+**Noms français** : les noms officiels de la VF viennent de La Garde de Nuit. Quelques lieux des livres n'ont pas de VF
+connue et restent en VO. Pour corriger ou traduire un nom : ajoutez une ligne `Nom VO,Nom français` dans
+`donnees/monde/traductions.csv`.
 
 **Ajouter un repère** (`donnees/monde/reperes.csv`) :
 1. Sur la page Carte, cliquez **Placer un repère**, puis cliquez à l'endroit voulu.

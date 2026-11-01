@@ -1,23 +1,18 @@
 // Song of Westeros - carte du monde interactive.
-// Fond et donnees : mod "A Game of Thrones" pour Crusader Kings III. Noms VF : A Wiki of Ice and Fire / La Garde de Nuit.
+// Fond : mod "A Game of Thrones" (CK3). Seuls les lieux, personnages, peuples et cultes des livres sont affiches
+// (verifies sur A Wiki of Ice and Fire). Noms VF : La Garde de Nuit.
 (function () {
   const NZ = 5;                 // zoom ou 1 pixel de la carte source = 1 pixel ecran
   const W = 9216, H = 6144;     // taille de la carte source
-  const ORDER = ["e", "k", "d", "c"];
-  const TIER = {
-    e: { file: "regions", label: "Région", enfants: "Territoires" },
-    k: { file: "territoires", label: "Territoire", enfants: "Duchés" },
-    d: { file: "duches", label: "Duché", enfants: "Comtés" },
-    c: { file: "comtes", label: "Comté", enfants: "Châteaux et cités" },
-    b: { label: "Baronnie" },
-  };
   const HOLD = {
     castle_holding: "Château", city_holding: "Cité", church_holding: "Temple", monastery_holding: "Monastère",
-    tribal_holding: "Camp tribal", pirate_den_holding: "Repaire de pirates", ruin_holding: "Ruines",
+    tribal_holding: "Campement", pirate_den_holding: "Repaire de pirates", ruin_holding: "Ruines",
   };
-  // Plages de zoom ou chaque niveau est lisible (noms et clic)
-  const WIN = { e: [0, 3], k: [3, 3.75], d: [3.75, 4.55], c: [4.55, 5.6] }; // un seul niveau de noms a la fois
-  // Placement des noms des grandes regions, ajuste a la main (position en pixels de la carte source, angle en degres)
+  const MODES = [["royaumes", "Royaumes"], ["cultures", "Peuples"], ["religions", "Religions"], ["papier", "Carte seule"]];
+  const FIELD = { cultures: "cu", religions: "fa" };
+  // Zoom a partir duquel chaque rang de lieu apparait (1 : capitales et grandes cites, 2 : sieges, 3 : autres)
+  const RANK_Z = { 1: 2.9, 2: 4, 3: 5 };
+  // Placement des noms des grandes regions, ajuste a la main (pixels de la carte source, angle en degres)
   const LABEL_FIX = {
     e_the_reach: { l: [1010, 3640], a: -20 },
     e_the_stormlands: { l: [1830, 3430], a: 0, w: 620 },
@@ -25,7 +20,6 @@
     e_the_riverlands: { l: [1330, 2830], a: 0 },
     e_the_westerlands: { l: [880, 3020], a: 35 },
   };
-  const MODES = [["royaumes", "Royaumes"], ["cultures", "Cultures"], ["religions", "Religions"], ["papier", "Carte seule"]];
 
   const $ = (s, r = document) => r.querySelector(s);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -51,167 +45,142 @@
   }
 
   async function init() {
-    const [T, gE, gK, gD, gC, routes, tradTxt, modTxt, autoTxt, armTxt, repTxt] = await Promise.all([
-      json("donnees/monde/titres.json"), json("donnees/monde/regions.json"), json("donnees/monde/territoires.json"),
-      json("donnees/monde/duches.json"), json("donnees/monde/comtes.json"), json("donnees/monde/routes.json"),
-      text("donnees/monde/traductions.csv"), text("donnees/monde/traductions-mod.csv"), text("donnees/monde/traductions-auto.csv"), text("donnees/armees.csv"), text("donnees/monde/reperes.csv"),
+    const [T, gRegions, gCultures, gReligions, routes, tradTxt, armTxt, repTxt] = await Promise.all([
+      json("donnees/monde/titres.json"), json("donnees/monde/regions.json"), json("donnees/monde/cultures.json"),
+      json("donnees/monde/religions.json"), json("donnees/monde/routes.json"),
+      text("donnees/monde/traductions.csv"), text("donnees/armees.csv"), text("donnees/monde/reperes.csv"),
     ]);
-    const geo = { e: gE, k: gK, d: gD, c: gC };
-    const FR = Object.fromEntries([...parseCSV(autoTxt), ...parseCSV(modTxt), ...parseCSV(tradTxt)].map((r) => [r["Original"], r["Français"]])); // traductions.csv prioritaire
+    const FR = Object.fromEntries(parseCSV(tradTxt).map((r) => [r["Original"], r["Français"]]));
     const armees = parseCSV(armTxt), reperes = parseCSV(repTxt);
     const nom = (k) => (T[k] ? FR[T[k].vo || T[k].n] || T[k].n : k);
-    const trd = (s) => (s ? FR[s] || s : s);
     const armee = (house) => {
       if (!house) return null;
       const h = norm("Maison " + house);
       return armees.find((r) => norm(r["Maison"]) === h || norm(r["Maison"]).startsWith(h + " "));
     };
+    const places = Object.entries(T).filter(([, t]) => t.t === "b").map(([k, t]) => ({ k, t }));
+    const placesOf = {};
+    places.forEach((p) => (placesOf[p.t.r] ||= []).push(p.k));
 
     // ---------- Carte et fond ----------
     const map = L.map("map", { crs: L.CRS.Simple, minZoom: 1.5, maxZoom: 7, zoomSnap: 0.25, zoomDelta: 0.5, wheelPxPerZoomLevel: 120, zoomControl: false, preferCanvas: true });
     const P = (x, y) => map.unproject([x, y], NZ);
     const world = L.latLngBounds(P(0, 0), P(W, H));
-    map.setMaxBounds(L.latLngBounds(P(-1600, -400), P(W + 400, H + 400))); // marge pour degager les panneaux
+    map.setMaxBounds(L.latLngBounds(P(-1600, -400), P(W + 400, H + 400)));
     L.control.zoom({ position: "bottomright" }).addTo(map);
-    map.attributionControl.setPrefix(false).addAttribution("Carte : mod <em>A Game of Thrones</em> (CK3) · Noms VF : A Wiki of Ice and Fire, La Garde de Nuit · Univers © G. R. R. Martin");
+    map.attributionControl.setPrefix(false).addAttribution("Fond de carte : mod <em>A Game of Thrones</em> (CK3) · Lieux et noms VF : A Wiki of Ice and Fire, La Garde de Nuit · Univers © G. R. R. Martin");
     L.tileLayer("monde/tuiles/{z}/{x}_{y}.webp", { tileSize: 256, minZoom: 0, maxZoom: 7, minNativeZoom: 0, maxNativeZoom: NZ, noWrap: true, bounds: world, keepBuffer: 3 }).addTo(map);
+    const toLL = (g) => g.map((poly) => poly.map((ring) => ring.map(([x, y]) => P(x, y))));
 
-    // ---------- Territoires (un seul canvas pour tous les niveaux) ----------
-    const politicalPane = map.createPane("political"); politicalPane.style.zIndex = 410;
-    const renderer = L.canvas({ pane: "political", padding: 0.4, tolerance: 1 });
-    const feats = {}, byTier = { e: [], k: [], d: [], c: [] };
-    ORDER.forEach((t) => geo[t].forEach((f) => {
-      const lay = L.polygon(f.g.map((poly) => poly.map((ring) => ring.map(([x, y]) => P(x, y)))), { renderer, interactive: false, smoothFactor: 0.6 });
-      lay.fid = f.id; lay.tier = t; lay.f = f;
+    // ---------- Zones des peuples et des cultes (sous les regions) ----------
+    const areaPane = map.createPane("areas"); areaPane.style.zIndex = 405; areaPane.style.pointerEvents = "none";
+    const areaRenderer = L.canvas({ pane: "areas", padding: 0.4 });
+    const areas = { cultures: [], religions: [] };
+    const cats = {};
+    Object.entries({ cultures: gCultures, religions: gReligions }).forEach(([m, feats]) => {
+      const count = {};
+      places.forEach(({ t }) => { const v = t[FIELD[m]]; if (v) count[v] = (count[v] || 0) + 1; });
+      const order = feats.map((f) => f.id).sort((a, b) => (count[b] || 0) - (count[a] || 0));
+      cats[m] = new Map(order.map((v, i) => [v, { n: count[v] || 0, color: `hsl(${Math.round((i * 137.508) % 360)}, ${i % 2 ? 42 : 55}%, ${i % 3 === 0 ? 50 : i % 3 === 1 ? 60 : 42}%)` }]));
+      feats.forEach((f) => {
+        const lay = L.polygon(toLL(f.g), { renderer: areaRenderer, interactive: false, stroke: false, fill: false });
+        lay.gid = f.id; areas[m].push(lay); lay.addTo(map);
+      });
+    });
+
+    // ---------- Regions ----------
+    const regionPane = map.createPane("regions"); regionPane.style.zIndex = 410;
+    const renderer = L.canvas({ pane: "regions", padding: 0.4, tolerance: 1 });
+    const feats = {}, regionLayers = [];
+    let mode = "royaumes", hovered = null, selected = null, picking = false, legendHi = null, legendPin = null;
+    gRegions.forEach((f) => {
+      const lay = L.polygon(toLL(f.g), { renderer, smoothFactor: 0.6 });
+      lay.fid = f.id; lay.f = f;
       lay.on("mouseover", (e) => { hovered = lay; lay.setStyle(styleFor(lay)); card(e.originalEvent, f.id); })
         .on("mouseout", () => { hovered = null; lay.setStyle(styleFor(lay)); card(null); })
         .on("mousemove", (e) => moveCard(e.originalEvent))
-        .on("click", (e) => { if (picking) return; L.DomEvent.stopPropagation(e); const h = pickHolding(e.containerPoint); select(h || f.id, false); });
+        .on("click", (e) => { if (picking) return; L.DomEvent.stopPropagation(e); const h = pickPlace(e.containerPoint); select(h || f.id, false); });
       lay.addTo(map);
-      feats[f.id] = lay; byTier[t].push(lay);
-    }));
-
-    let mode = "royaumes", hovered = null, selected = null, picking = false, legendHi = null, legendPin = null;
-    // Categories (cultures, religions) : couleurs bien distinctes, attribuees par ordre d'importance
-    const FIELD = { cultures: "cu", religions: "fa" };
-    const cats = {};
-    Object.entries(FIELD).forEach(([m, f]) => {
-      const count = {};
-      byTier.c.forEach((l) => { const v = T[l.fid]?.[f]; if (v) count[v] = (count[v] || 0) + 1; });
-      const list = Object.entries(count).sort((a, b) => b[1] - a[1]);
-      cats[m] = new Map(list.map(([v, n], i) => [v, { n, color: `hsl(${Math.round((i * 137.508) % 360)}, ${i % 2 ? 42 : 55}%, ${i % 3 === 0 ? 50 : i % 3 === 1 ? 60 : 42}%)` }]));
+      feats[f.id] = lay; regionLayers.push(lay);
     });
-    const colorFor = (k) => {
-      const t = T[k];
-      if (mode === "royaumes") return t.c || "#8a8a8a";
-      if (FIELD[mode]) { const v = t[FIELD[mode]]; return v ? cats[mode].get(v)?.color || "#9a9184" : "#9a9184"; }
-      return null;
-    };
-    const fillTier = () => (mode === "royaumes" ? "e" : mode === "papier" ? null : "c");
-    const activeTier = (z) => (z < WIN.k[0] ? "e" : z < WIN.d[0] ? "k" : z < WIN.c[0] ? "d" : "c");
 
     function styleFor(lay) {
-      const t = lay.tier, z = map.getZoom(), rank = ORDER.indexOf(t);
-      const visible = z >= [0, 2.75, 3.6, 4.4][rank];
-      const s = {
-        stroke: visible, color: "#2b1d10", lineJoin: "round",
-        weight: [2.2, 1.3, 0.9, 0.6][rank] * (z >= 5 ? 1.25 : 1),
-        opacity: [0.75, 0.45, 0.35, 0.28][rank], fill: false, fillOpacity: 0,
-      };
-      if (t === fillTier()) {
-        s.fill = true; s.fillColor = colorFor(lay.fid);
-        s.fillOpacity = t === "e" ? clamp(0.46 - (z - 2.5) * 0.12, 0.1, 0.46) : clamp(0.55 - (z - 3.5) * 0.1, 0.22, 0.55);
-        const focus = legendHi || legendPin;
-        if (focus && FIELD[mode]) s.fillOpacity = T[lay.fid]?.[FIELD[mode]] === focus ? 0.78 : 0.06;
+      const z = map.getZoom();
+      const s = { stroke: true, color: "#2b1d10", weight: z >= 5 ? 2.6 : 2, opacity: 0.7, lineJoin: "round", fill: false, fillOpacity: 0 };
+      if (mode === "royaumes") { s.fill = true; s.fillColor = T[lay.fid]?.c || "#888"; s.fillOpacity = clamp(0.46 - (z - 2.5) * 0.11, 0.08, 0.46); }
+      if (lay === hovered) {
+        s.fill = true; s.opacity = 0.95;
+        if (mode === "royaumes") s.fillOpacity += 0.18; else { s.fillColor = "#fff3cf"; s.fillOpacity = 0.14; }
       }
-      if (lay === hovered) { s.fill = true; s.fillColor = "#fff3cf"; s.fillOpacity = 0.28; s.stroke = true; s.opacity = 0.9; }
-      if (lay === selected) { s.stroke = true; s.color = "#f3d27a"; s.weight = 3; s.opacity = 1; }
+      if (lay === selected) { s.color = "#f3d27a"; s.weight = 3.2; s.opacity = 1; }
       return s;
     }
+    function areaStyle(lay, m) {
+      if (mode !== m) return { fill: false, stroke: false };
+      const z = map.getZoom(), focus = legendHi || legendPin;
+      let op = clamp(0.55 - (z - 3) * 0.08, 0.25, 0.55);
+      if (focus) op = lay.gid === focus ? 0.75 : 0.05;
+      return { fill: true, fillColor: cats[m].get(lay.gid)?.color || "#999", fillOpacity: op, stroke: false };
+    }
     function restyle() {
-      const z = map.getZoom(), act = activeTier(z);
-      ORDER.forEach((t) => byTier[t].forEach((l) => {
-        // les niveaux plus grossiers restent cliquables la ou il n'existe pas de niveau plus fin (Essos)
-        l.options.interactive = ORDER.indexOf(t) <= ORDER.indexOf(act);
-        l.setStyle(styleFor(l));
-      }));
+      regionLayers.forEach((l) => l.setStyle(styleFor(l)));
+      Object.keys(areas).forEach((m) => areas[m].forEach((l) => l.setStyle(areaStyle(l, m))));
       if (selected) selected.bringToFront();
-      $("#mm-hint").textContent = "Au clic : " + TIER[act].label.toLowerCase() + (z >= 5 ? ", château ou cité" : "");
     }
 
     $("#map-modes").innerHTML = MODES.map(([k, l]) => `<button type="button" data-m="${k}"${k === mode ? ' class="active"' : ""}>${l}</button>`).join("");
-    $("#map-modes").addEventListener("click", (e) => {
-      const b = e.target.closest("button"); if (!b) return;
-      mode = b.dataset.m;
-      document.querySelectorAll("#map-modes button").forEach((x) => x.classList.toggle("active", x === b));
-      legendHi = legendPin = null;
+    $("#map-modes").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) setMode(b.dataset.m); });
+    function setMode(m) {
+      mode = m; legendHi = legendPin = null;
+      document.querySelectorAll("#map-modes button").forEach((x) => x.classList.toggle("active", x.dataset.m === m));
       legend(); restyle();
-    });
+    }
 
-    // ---------- Legende (cultures, religions) ----------
+    // ---------- Legende (peuples, religions) ----------
     function legend() {
       const el = $("#legend");
       if (!FIELD[mode]) { el.hidden = true; el.innerHTML = ""; return; }
       el.hidden = false;
-      el.innerHTML = `<p class="panel-title">Légende · ${mode === "cultures" ? "cultures" : "religions"}</p><div class="legend-list">` +
-        [...cats[mode]].map(([v, c]) => `<button type="button" data-v="${esc(v)}"${legendPin === v ? ' class="pinned"' : ""}><i style="background:${c.color}"></i><span>${esc(trd(v))}</span><b>${c.n}</b></button>`).join("") + "</div>";
+      el.innerHTML = `<p class="panel-title">Légende · ${mode === "cultures" ? "peuples" : "religions"}</p><div class="legend-list">` +
+        [...cats[mode]].map(([v, c]) => `<button type="button" data-v="${esc(v)}"${legendPin === v ? ' class="pinned"' : ""}><i style="background:${c.color}"></i><span>${esc(v)}</span><b>${c.n || ""}</b></button>`).join("") + "</div>";
     }
-    const restyleCounties = () => byTier.c.forEach((l) => l.setStyle(styleFor(l)));
-    $("#legend").addEventListener("mouseover", (e) => { const b = e.target.closest("button[data-v]"); if (b && b.dataset.v !== legendHi) { legendHi = b.dataset.v; restyleCounties(); } });
-    $("#legend").addEventListener("mouseleave", () => { if (legendHi) { legendHi = null; restyleCounties(); } });
+    const restyleAreas = () => (areas[mode] || []).forEach((l) => l.setStyle(areaStyle(l, mode)));
+    $("#legend").addEventListener("mouseover", (e) => { const b = e.target.closest("button[data-v]"); if (b && b.dataset.v !== legendHi) { legendHi = b.dataset.v; restyleAreas(); } });
+    $("#legend").addEventListener("mouseleave", () => { if (legendHi) { legendHi = null; restyleAreas(); } });
     $("#legend").addEventListener("click", (e) => {
       const b = e.target.closest("button[data-v]"); if (!b) return;
       legendPin = legendPin === b.dataset.v ? null : b.dataset.v;
       document.querySelectorAll("#legend button").forEach((x) => x.classList.toggle("pinned", x.dataset.v === legendPin));
-      restyleCounties();
+      restyleAreas();
     });
 
-    // ---------- Routes ----------
+    // ---------- Routes (grandes routes des livres) ----------
     const roadPane = map.createPane("roads"); roadPane.style.zIndex = 420; roadPane.style.pointerEvents = "none";
     const roadRenderer = L.canvas({ pane: "roads", padding: 0.4 });
     const roadLayer = L.layerGroup();
-    routes.forEach((r) => r.lines.forEach((ln) => {
-      const major = r.type !== "secondaire";
-      L.polyline(ln.map(([x, y]) => P(x, y)), { renderer: roadRenderer, color: major ? "#7c2a17" : "#5d4632", weight: major ? 2.4 : 1.1, opacity: major ? 0.8 : 0.55, dashArray: major ? null : "3 5", lineCap: "round", interactive: false, major }).addTo(roadLayer);
-    }));
+    routes.forEach((r) => r.lines.forEach((ln) => L.polyline(ln.map(([x, y]) => P(x, y)), { renderer: roadRenderer, color: "#7c2a17", weight: 2.2, opacity: 0.75, lineCap: "round", interactive: false }).addTo(roadLayer)));
     roadLayer.addTo(map);
-    function restyleRoads() {
-      const z = map.getZoom();
-      roadLayer.eachLayer((l) => l.setStyle(l.options.major ? { weight: z >= 5 ? 3.2 : z >= 4 ? 2.4 : 1.6 } : { opacity: z < 3.5 ? 0 : 0.55, weight: z >= 5 ? 1.5 : 1.1 }));
-    }
+    const restyleRoads = () => { const z = map.getZoom(); roadLayer.eachLayer((l) => l.setStyle({ weight: z >= 5 ? 3 : z >= 4 ? 2.4 : 1.6 })); };
 
-    // ---------- Noms et chateaux : dessines sur un canvas, sans chevauchement ----------
-    const items = [];
-    ORDER.forEach((t, rank) => geo[t].forEach((f) => {
+    // ---------- Noms et lieux : canvas, sans chevauchement ----------
+    const regionItems = gRegions.map((f) => {
       let name = nom(f.id);
-      if ((t === "e" || t === "k") && name.length > 12) name = name.replace(/^(Les |Le |La |L')/, ""); // plus court sur la carte
-      const win = t === "e" && f.id.startsWith("k_") ? [0, WIN.d[0]] : WIN[t]; // cites libres : region et territoire a la fois
-      const fix = LABEL_FIX[f.id] || {};
-      const [lx, ly] = fix.l || f.l;
-      items.push({ kind: "label", t, rank, win, k: f.id, name, ll: P(lx, ly), w: fix.w || f.w, h: f.h, a: ((fix.a ?? f.a) * Math.PI) / 180, area: f.ar });
-    }));
-    const holdings = Object.entries(T).filter(([, t]) => t.t === "b" && t.hold && HOLD[t.hold] && t.xy)
-      .map(([k, t]) => ({ kind: "hold", k, name: nom(k), hold: t.hold, cap: !!t.cap, ll: P(t.xy[0], t.xy[1]) }));
-    items.sort((a, b) => a.rank - b.rank || b.area - a.area);
-    holdings.sort((a, b) => b.cap - a.cap || (a.hold === "city_holding" ? -1 : 1));
+      if (name.length > 12) name = name.replace(/^(Les |Le |La |L')/, "");
+      const fix = LABEL_FIX[f.id] || {}, [lx, ly] = fix.l || f.l;
+      return { k: f.id, name, ll: P(lx, ly), w: fix.w || f.w, h: f.h, a: ((fix.a ?? f.a) * Math.PI) / 180, area: f.ar, essos: f.id.startsWith("k_") };
+    }).sort((a, b) => b.area - a.area);
+    const placeItems = places.map(({ k, t }) => ({ k, t, name: nom(k), ll: P(t.xy[0], t.xy[1]) }))
+      .sort((a, b) => a.t.rk - b.t.rk || (b.t.hold === "city_holding") - (a.t.hold === "city_holding"));
 
-    const STYLE = {
-      e: { font: "700", fam: "Cinzel", spacing: 0.16, upper: true, max: 26, min: 9.5, color: "#24170c" },
-      k: { font: "600", fam: "Cinzel", spacing: 0.14, upper: true, max: 22, min: 10, color: "#33230f" },
-      d: { font: "600", fam: "Cinzel", spacing: 0.05, upper: false, max: 19, min: 11, color: "#3a2814" },
-      c: { font: "600", fam: "Inter", spacing: 0.02, upper: false, max: 14, min: 10.5, color: "#3a2a18" },
-    };
-    let showNames = true, showHold = true, hits = [];
+    let showNames = true, showPlaces = true, hits = [];
     const LabelLayer = L.Layer.extend({
       onAdd(m) {
         this._c = L.DomUtil.create("canvas", "map-labels");
         m.getPane("labelsPane").appendChild(this._c);
         m.on("moveend resize", this._draw, this);
-        m.on("zoomstart", this._hide, this);
+        m.on("zoomstart", () => this._c.classList.add("fading"));
         this._draw();
       },
-      onRemove(m) { this._c.remove(); m.off("moveend resize", this._draw, this); m.off("zoomstart", this._hide, this); },
-      _hide() { this._c.classList.add("fading"); },
       _draw() {
         const c = this._c, m = this._map, size = m.getSize(), pad = 0.25, dpr = window.devicePixelRatio || 1;
         const w = size.x * (1 + 2 * pad), h = size.y * (1 + 2 * pad);
@@ -223,124 +192,118 @@
         ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
         const z = m.getZoom(), s = Math.pow(2, z - NZ), boxes = [];
         hits = [];
-        // Collision exacte entre rectangles inclines (axes separateurs)
         const rect = (cx, cy, hw, hh, a = 0) => {
-          const c = Math.cos(a), s2 = Math.sin(a);
-          const pts = [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]].map(([x, y]) => [cx + x * c - y * s2, cy + x * s2 + y * c]);
-          return { pts, axes: [[c, s2], [-s2, c]] };
+          const co = Math.cos(a), si = Math.sin(a);
+          return { pts: [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]].map(([x, y]) => [cx + x * co - y * si, cy + x * si + y * co]), axes: [[co, si], [-si, co]] };
         };
         const proj = (r, ax) => { let mn = Infinity, mx = -Infinity; r.pts.forEach(([x, y]) => { const v = x * ax[0] + y * ax[1]; if (v < mn) mn = v; if (v > mx) mx = v; }); return [mn, mx]; };
         const hit = (a, b) => [...a.axes, ...b.axes].every((ax) => { const p = proj(a, ax), q = proj(b, ax); return p[0] < q[1] && q[0] < p[1]; });
         const free = (r) => !boxes.some((o) => hit(r, o));
-        const box4 = (b) => rect((b[0] + b[2]) / 2, (b[1] + b[3]) / 2, (b[2] - b[0]) / 2, (b[3] - b[1]) / 2);
         const toCanvas = (ll) => { const p = m.latLngToLayerPoint(ll); return [p.x - tl.x, p.y - tl.y]; };
 
-        // Chateaux et cites (dessines d'abord pour reserver leur place)
-        if (showHold && z >= 5) {
-          holdings.forEach((x) => {
-            if (!x.cap && z < 6.25) return;
+        // Lieux des livres, par ordre d'importance
+        const drawPlaces = (keep) => {
+          if (!showPlaces) return;
+          for (const x of placeItems) {
+            if (z < RANK_Z[x.t.rk] || !keep(x.t.rk)) continue;
             const [px, py] = toCanvas(x.ll);
-            if (px < 0 || py < 0 || px > w || py > h) return;
-            const r = x.cap ? 4.5 : 3.5;
-            const box = box4([px - r - 1, py - r - 1, px + r + 1, py + r + 1]);
-            if (!free(box)) return;
-            boxes.push(box); glyph(ctx, x.hold, px, py, r);
+            if (px < 0 || py < 0 || px > w || py > h) continue;
+            const big = x.t.rk === 1;
+            const r = big ? 6 : x.t.rk === 2 ? 4.5 : 3.5;
+            const gb = rect(px, py, r + 1, r + 1);
+            if (!free(gb)) continue;
+            boxes.push(gb); glyph(ctx, x.t.hold, px, py, r, big);
             hits.push({ k: x.k, x: px, y: py });
-            const showLbl = x.cap ? z >= 5.5 : z >= 6.75;
-            if (showLbl && showNames) {
-              ctx.font = `600 ${x.cap ? 12 : 11}px Inter, sans-serif`;
-              const tw = ctx.measureText(x.name).width;
-              const lb = box4([px + r + 3, py - 7, px + r + 5 + tw, py + 7]);
-              if (free(lb)) {
-                boxes.push(lb);
-                ctx.textAlign = "left";
-                halo(ctx, x.name, px + r + 4, py, 3, "#2b1d10");
-                ctx.textAlign = "center";
-              }
+            if (!showNames) continue;
+            const fsz = big ? clamp(11 + (z - 3) * 1.5, 11, 16) : x.t.rk === 2 ? 12 : 11;
+            ctx.font = big ? `700 ${fsz.toFixed(1)}px Cinzel, serif` : `600 ${fsz}px Inter, sans-serif`;
+            const tw = ctx.measureText(x.name).width;
+            const lb = rect(px + r + 4 + tw / 2, py, tw / 2 + 2, fsz / 2 + 1);
+            if (!free(lb)) continue;
+            boxes.push(lb);
+            ctx.textAlign = "left";
+            halo(ctx, x.name, px + r + 4, py, big ? 3.5 : 3, big ? "#24170c" : "#2b1d10");
+            ctx.textAlign = "center";
+          }
+        };
+        drawPlaces((rk) => rk === 1); // capitales et grandes cites d'abord
+        // 1. Noms des regions (de loin), en fondu quand on s'approche
+        const regionAlpha = clamp((4.3 - z) / 0.8, 0, 1);
+        if (showNames && regionAlpha > 0) {
+          ctx.globalAlpha = regionAlpha;
+          for (const it of regionItems) {
+            const label = it.name.toUpperCase(), sp = 0.16, cw = 0.8 + sp;
+            const options = [[label]];
+            const spaces = [...label.matchAll(/ /g)].map((x) => x.index);
+            if (spaces.length) {
+              const mid = spaces.reduce((b, i) => (Math.abs(i - label.length / 2) < Math.abs(b - label.length / 2) ? i : b), spaces[0]);
+              options.push([label.slice(0, mid), label.slice(mid + 1)]);
             }
-          });
-        }
-        if (!showNames) { c.classList.remove("fading"); return; }
-        // Noms des territoires, du plus grand au plus petit niveau
-        for (const it of items) {
-          const [z0, z1] = it.win;
-          if (z < z0 || z >= z1) continue;
-          if (it.t === "c" && z >= 5.5 && showHold) continue; // de tres pres, les chateaux prennent le relais
-          const st = STYLE[it.t];
-          const label = st.upper ? it.name.toUpperCase() : it.name;
-          const cw = st.upper ? 0.8 + st.spacing : 0.56 + st.spacing;
-          // une ou deux lignes : on garde la disposition qui permet le texte le plus grand
-          const options = [[label]];
-          const sp = [...label.matchAll(/ /g)].map((m) => m.index);
-          if (sp.length) {
-            const mid = sp.reduce((b, i) => (Math.abs(i - label.length / 2) < Math.abs(b - label.length / 2) ? i : b), sp[0]);
-            options.push([label.slice(0, mid), label.slice(mid + 1)]);
+            let lines = options[0], fs = 0;
+            options.forEach((ls) => {
+              const f = Math.min((it.h * s * 0.55) / (ls.length === 1 ? 1 : 1.9), (it.w * s * 0.95) / (Math.max(...ls.map((l) => l.length)) * cw));
+              if (f > fs * 1.08) { fs = f; lines = ls; }
+            });
+            fs = clamp(fs, 9.5, it.essos ? 20 : 26);
+            const [px, py] = toCanvas(it.ll);
+            if (px < -200 || py < -100 || px > w + 200 || py > h + 100) continue;
+            const ang = clamp(it.a, -0.45, 0.45);
+            let box = null, sz = fs;
+            for (const k of [1, 0.82, 0.66, 0.52]) {
+              sz = fs * k; if (sz < 8) break;
+              ctx.font = `700 ${sz.toFixed(1)}px Cinzel, serif`;
+              if ("letterSpacing" in ctx) ctx.letterSpacing = (sp * sz).toFixed(1) + "px";
+              const tw = Math.max(...lines.map((l) => ctx.measureText(l).width)), th = sz * (lines.length === 1 ? 1 : 2.1);
+              const b = rect(px, py, tw / 2 + 4, th / 2 + 2, ang);
+              if (free(b)) { box = b; break; }
+            }
+            if (!box) continue;
+            boxes.push(box);
+            ctx.save(); ctx.translate(px, py); ctx.rotate(ang);
+            lines.forEach((l, i) => halo(ctx, l, 0, (i - (lines.length - 1) / 2) * sz * 1.1, Math.max(2.5, sz * 0.22), "#24170c", 0.75));
+            ctx.restore();
           }
-          let lines = null, fs = 0;
-          options.forEach((ls) => {
-            const longest = Math.max(...ls.map((l) => l.length));
-            const f = Math.min((it.h * s * 0.55) / (ls.length === 1 ? 1 : 1.9), (it.w * s * 0.95) / (longest * cw));
-            if (f > fs * 1.08) { fs = f; lines = ls; }
-          });
-          if (fs < st.min) { if (it.t !== "e") continue; fs = st.min; } // une region garde toujours un nom lisible
-          fs = Math.min(fs, st.max);
-          const [px, py] = toCanvas(it.ll);
-          if (px < -200 || py < -100 || px > w + 200 || py > h + 100) continue;
-          const ang = it.t === "e" || it.t === "k" ? clamp(it.a, -0.45, 0.45) : it.a;
-          let box = null, size = fs;
-          for (const k of [1, 0.82, 0.66, 0.52]) { // si la place manque, on essaie plus petit avant d'abandonner
-            size = fs * k;
-            if (size < st.min * 0.85) break;
-            ctx.font = `${st.font} ${size.toFixed(1)}px ${st.fam}, serif`;
-            if ("letterSpacing" in ctx) ctx.letterSpacing = (st.spacing * size).toFixed(1) + "px";
-            const tw = Math.max(...lines.map((l) => ctx.measureText(l).width)), th = size * (lines.length === 1 ? 1 : 2.1);
-            const b = rect(px, py, tw / 2 + 4, th / 2 + 2, ang);
-            if (free(b)) { box = b; break; }
-          }
-          if (!box) continue;
-          fs = size;
-          boxes.push(box);
-          ctx.save(); ctx.translate(px, py); ctx.rotate(ang);
-          lines.forEach((l, i) => halo(ctx, l, 0, (i - (lines.length - 1) / 2) * fs * 1.1, Math.max(2.5, fs * 0.22), st.color, it.t === "e" ? 0.75 : 0.85));
-          ctx.restore();
+          ctx.globalAlpha = 1;
+          if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
         }
-        if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+
+        drawPlaces((rk) => rk > 1);
         c.classList.remove("fading");
       },
     });
-    function halo(ctx, s, x, y, lw, color, alpha = 0.85) {
+    function halo(ctx, s, x, y, lw, color, alpha = 0.88) {
       ctx.lineWidth = lw; ctx.strokeStyle = `rgba(239, 228, 200, ${alpha})`; ctx.strokeText(s, x, y);
       ctx.fillStyle = color; ctx.fillText(s, x, y);
     }
-    function glyph(ctx, hold, x, y, r) {
+    function glyph(ctx, hold, x, y, r, major) {
       ctx.save(); ctx.translate(x, y);
-      ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(239, 228, 200, .95)";
+      ctx.lineWidth = major ? 2 : 1.5; ctx.strokeStyle = "rgba(239, 228, 200, .95)";
       ctx.beginPath();
-      if (hold === "castle_holding") { // tour crenelee
-        ctx.moveTo(-r, r); ctx.lineTo(-r, -r); ctx.lineTo(-r / 2, -r); ctx.lineTo(-r / 2, -r / 2); ctx.lineTo(r / 2, -r / 2); ctx.lineTo(r / 2, -r); ctx.lineTo(r, -r); ctx.lineTo(r, r); ctx.closePath();
-        ctx.fillStyle = "#3b2a1a";
-      } else if (hold === "city_holding") { // maison a pignon
-        ctx.moveTo(-r, r); ctx.lineTo(-r, -r / 4); ctx.lineTo(0, -r * 1.1); ctx.lineTo(r, -r / 4); ctx.lineTo(r, r); ctx.closePath();
-        ctx.fillStyle = "#6e4a2c";
-      } else if (hold === "church_holding" || hold === "monastery_holding") { // etoile a sept branches simplifiee
+      if (hold === "city_holding") {
+        ctx.moveTo(-r, r); ctx.lineTo(-r, -r / 4); ctx.lineTo(0, -r * 1.1); ctx.lineTo(r, -r / 4); ctx.lineTo(r, r); ctx.closePath(); ctx.fillStyle = "#6e3b1c";
+      } else if (hold === "church_holding" || hold === "monastery_holding") {
         for (let i = 0; i < 14; i++) { const a = (i * Math.PI) / 7 - Math.PI / 2, rr = i % 2 ? r * 0.45 : r * 1.05; ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
         ctx.closePath(); ctx.fillStyle = "#2f4a78";
       } else if (hold === "ruin_holding") {
         ctx.arc(0, 0, r * 0.8, 0, Math.PI * 2); ctx.fillStyle = "#7a7166";
-      } else { // camp, repaire
+      } else if (hold === "castle_holding") {
+        ctx.moveTo(-r, r); ctx.lineTo(-r, -r); ctx.lineTo(-r / 2, -r); ctx.lineTo(-r / 2, -r / 2); ctx.lineTo(r / 2, -r / 2); ctx.lineTo(r / 2, -r); ctx.lineTo(r, -r); ctx.lineTo(r, r); ctx.closePath(); ctx.fillStyle = "#3b2a1a";
+      } else {
         ctx.moveTo(0, -r); ctx.lineTo(r, r); ctx.lineTo(-r, r); ctx.closePath(); ctx.fillStyle = "#5b4a2c";
       }
-      ctx.stroke(); ctx.fill(); ctx.restore();
+      ctx.stroke(); ctx.fill();
+      if (major) { ctx.beginPath(); ctx.arc(0, 0, r + 3.5, 0, Math.PI * 2); ctx.strokeStyle = "rgba(59, 42, 26, .7)"; ctx.lineWidth = 1.2; ctx.stroke(); }
+      ctx.restore();
     }
     map.createPane("labelsPane").style.zIndex = 450;
     map.getPane("labelsPane").style.pointerEvents = "none";
     const labels = new LabelLayer().addTo(map);
     if (document.fonts) document.fonts.ready.then(() => labels._draw());
 
-    function pickHolding(cp) {
-      if (map.getZoom() < 5 || !showHold) return null;
+    function pickPlace(cp) {
+      if (!showPlaces) return null;
       const size = map.getSize(), px = cp.x + size.x * 0.25, py = cp.y + size.y * 0.25;
-      let best = null, bd = 11 * 11;
+      let best = null, bd = 12 * 12;
       hits.forEach((h) => { const d = (h.x - px) ** 2 + (h.y - py) ** 2; if (d < bd) { bd = d; best = h.k; } });
       return best;
     }
@@ -350,7 +313,8 @@
     function card(ev, k) {
       if (!ev || !k) { hc.hidden = true; return; }
       const t = T[k];
-      hc.innerHTML = `<strong>${esc(nom(k))}</strong><span>${t.t === "b" ? HOLD[t.hold] || "Baronnie" : TIER[t.t].label}${t.hh ? " · Maison " + esc(t.hh) : ""}</span>`;
+      const sub = t.t === "b" ? `${HOLD[t.hold] || "Lieu"} · ${esc(nom(t.r))}` : `Région${t.hh ? " · Maison " + esc(t.hh) : ""}`;
+      hc.innerHTML = `<strong>${esc(nom(k))}</strong><span>${sub}</span>`;
       hc.hidden = false; moveCard(ev);
     }
     function moveCard(ev) {
@@ -359,18 +323,14 @@
       hc.style.transform = `translate(${ev.clientX - r.left + 16}px, ${ev.clientY - r.top + 14}px)`;
     }
     map.on("mousemove", (e) => {
-      const h = pickHolding(e.containerPoint);
+      const h = pickPlace(e.containerPoint);
       $("#map").classList.toggle("on-hold", !!h);
-      if (h) card(e.originalEvent, h); else if (!hovered) card(null);
+      if (h) card(e.originalEvent, h); else if (hovered) card(e.originalEvent, hovered.fid); else card(null);
     });
-    map.on("click", (e) => { if (picking) return; const h = pickHolding(e.containerPoint); if (h) select(h, false); });
+    map.on("click", (e) => { if (picking) return; const h = pickPlace(e.containerPoint); if (h) select(h, false); });
 
-    // ---------- Selection et fiche d'information ----------
-    const chain = (k) => { const out = []; let p = T[k]?.p; while (p && T[p]) { out.unshift(p); p = T[p].p; } return out; };
-    const kidsOf = {};
-    Object.entries(T).forEach(([k, t]) => { if (t.p && (t.t !== "b" || HOLD[t.hold])) (kidsOf[t.p] ||= []).push(k); });
+    // ---------- Selection et fiche ----------
     let selMarker = null;
-
     function select(k, fly = true) {
       const t = T[k]; if (!t) return;
       const prev = selected; selected = feats[k] || null;
@@ -378,36 +338,34 @@
       if (selMarker) { map.removeLayer(selMarker); selMarker = null; }
       if (selected) {
         selected.setStyle(styleFor(selected)); selected.bringToFront();
-        if (fly) map.flyToBounds(selected.getBounds(), { padding: [80, 80], maxZoom: { e: 3, k: 3.6, d: 4.4, c: 5.25 }[selected.tier], duration: 0.8 });
+        if (fly) map.flyToBounds(selected.getBounds(), { padding: [80, 80], maxZoom: 4, duration: 0.8 });
       } else if (t.xy) {
-        selMarker = L.circleMarker(P(t.xy[0], t.xy[1]), { radius: 11, color: "#f3d27a", weight: 2.5, fill: false, interactive: false }).addTo(map);
-        if (fly) map.flyTo(P(t.xy[0], t.xy[1]), 6, { duration: 0.8 });
+        selMarker = L.circleMarker(P(t.xy[0], t.xy[1]), { radius: 12, color: "#f3d27a", weight: 2.5, fill: false, interactive: false }).addTo(map);
+        if (fly) map.flyTo(P(t.xy[0], t.xy[1]), Math.max(map.getZoom(), RANK_Z[t.rk] + 0.75), { duration: 0.8 });
       }
       panel(k);
-      history.replaceState(null, "", "#" + k);
+      history.replaceState(null, "", location.pathname + location.search + "#" + k);
     }
 
     function panel(k) {
-      const t = T[k], a = armee(t.hh);
-      const tierLabel = t.t === "b" ? HOLD[t.hold] || "Baronnie" : TIER[t.t].label;
-      const crumbs = chain(k).map((p) => `<button type="button" data-k="${p}">${esc(nom(p))}</button>`).join("<span>›</span>");
-      const kids = (kidsOf[k] || []).slice().sort((x, y) => nom(x).localeCompare(nom(y), "fr"));
-      const swatch = t.c || T[t.p]?.c || "#c9a45c";
+      const t = T[k], a = armee(t.hh), isPlace = t.t === "b";
+      const list = isPlace ? [] : (placesOf[k] || []).slice().sort((x, y) => T[x].rk - T[y].rk || nom(x).localeCompare(nom(y), "fr"));
+      const dot = (x) => (T[x].hold === "city_holding" ? "#6e3b1c" : T[x].hold === "church_holding" ? "#2f4a78" : "#3b2a1a");
       $("#info").innerHTML = `
-        <div class="info-head" style="--c:${swatch}">
-          <p class="info-tier">${tierLabel}</p>
+        <div class="info-head" style="--c:${isPlace ? T[t.r]?.c || "#c9a45c" : t.c}">
+          <p class="info-tier">${isPlace ? HOLD[t.hold] || "Lieu" : "Région"}</p>
           <h2>${esc(nom(k))}</h2>
           ${t.vo && t.vo !== nom(k) ? `<p class="info-vo">VO : ${esc(t.vo)}</p>` : ""}
         </div>
-        ${crumbs ? `<nav class="crumbs">${crumbs}</nav>` : ""}
+        ${isPlace ? `<nav class="crumbs"><button type="button" data-k="${t.r}">${esc(nom(t.r))}</button></nav>` : ""}
         <dl class="info-list">
-          ${t.h ? `<dt>${t.t === "e" ? "Suzerain" : "Seigneur"}</dt><dd>${esc(t.h)}${t.hh ? `<span>Maison ${esc(t.hh)}</span>` : ""}</dd>` : ""}
-          ${t.cu ? `<dt>Culture</dt><dd>${esc(trd(t.cu))}</dd>` : ""}
-          ${t.fa ? `<dt>Religion</dt><dd>${esc(trd(t.fa))}</dd>` : ""}
+          ${t.h ? `<dt>${isPlace ? "Seigneur" : "Suzerain"}</dt><dd>${esc(t.h)}${t.hh ? `<span>Maison ${esc(t.hh)}</span>` : ""}</dd>` : ""}
+          ${t.cu ? `<dt>Peuple</dt><dd>${esc(t.cu)}</dd>` : ""}
+          ${t.fa ? `<dt>Religion</dt><dd>${esc(t.fa)}</dd>` : ""}
         </dl>
         ${a ? `<div class="info-army"><p>Forces de la maison ${esc(t.hh)}</p><div><span>Levées<b>${fmt(a["Levées"])}</b></span><span>Chevaliers<b>${fmt(a["Chevaliers"])}</b></span><span>Navires<b>${fmt(a["Flotte"])}</b></span></div><a href="armees.html">Voir les effectifs</a></div>` : ""}
-        ${kids.length ? `<p class="info-sub">${TIER[t.t]?.enfants || ""} · ${kids.length}</p><div class="info-kids">${kids.map((x) => `<button type="button" data-k="${x}"><i style="background:${T[x].c || colorFor(x) || "#8a7a60"}"></i>${esc(nom(x))}</button>`).join("")}</div>` : ""}
-        <p class="info-date">Situation en 183 AC</p>`;
+        ${list.length ? `<p class="info-sub">Lieux · ${list.length}</p><div class="info-kids">${list.map((x) => `<button type="button" data-k="${x}"><i style="background:${dot(x)}"></i>${esc(nom(x))}</button>`).join("")}</div>` : ""}
+        <p class="info-date">${t.h ? "Seigneur en 183 AC · " : ""}Lieux et personnages issus des livres</p>`;
       $("#info-panel").hidden = false;
     }
     $("#info").addEventListener("click", (e) => { const b = e.target.closest("button[data-k]"); if (b) select(b.dataset.k); });
@@ -415,20 +373,19 @@
       $("#info-panel").hidden = true;
       const prev = selected; selected = null; if (prev) prev.setStyle(styleFor(prev));
       if (selMarker) { map.removeLayer(selMarker); selMarker = null; }
-      history.replaceState(null, "", location.pathname);
+      history.replaceState(null, "", location.pathname + location.search);
     });
 
     // ---------- Recherche ----------
-    const index = Object.keys(T).filter((k) => feats[k] || (T[k].t === "b" && HOLD[T[k].hold]))
-      .map((k) => ({ k, s: norm([nom(k), T[k].vo, T[k].hh].filter(Boolean).join(" ")), r: { e: 0, k: 1, d: 2, c: 3, b: 4 }[T[k].t] }));
+    const index = Object.keys(T).map((k) => ({ k, s: norm([nom(k), T[k].vo, T[k].hh].filter(Boolean).join(" ")), r: T[k].t === "e" ? 0 : T[k].rk }));
     const search = $("#place-search"), results = $("#place-results");
     search.addEventListener("input", () => {
       const q = norm(search.value.trim());
       if (q.length < 2) { results.innerHTML = ""; return; }
-      const hitsQ = index.filter((x) => x.s.includes(q)).sort((a, b) => (b.s.startsWith(q) - a.s.startsWith(q)) || a.r - b.r).slice(0, 8);
-      results.innerHTML = hitsQ.length ? hitsQ.map(({ k }) => {
-        const t = T[k], par = chain(k).slice(-1)[0];
-        return `<button type="button" data-k="${k}">${esc(nom(k))}<span>${t.t === "b" ? HOLD[t.hold] : TIER[t.t].label}${par ? " · " + esc(nom(par)) : ""}</span></button>`;
+      const found = index.filter((x) => x.s.includes(q)).sort((a, b) => (b.s.startsWith(q) - a.s.startsWith(q)) || a.r - b.r).slice(0, 8);
+      results.innerHTML = found.length ? found.map(({ k }) => {
+        const t = T[k];
+        return `<button type="button" data-k="${k}">${esc(nom(k))}<span>${t.t === "b" ? `${HOLD[t.hold] || "Lieu"} · ${esc(nom(t.r))}` : "Région"}</span></button>`;
       }).join("") : `<p class="empty">Aucun résultat.</p>`;
     });
     results.addEventListener("click", (e) => { const b = e.target.closest("button[data-k]"); if (!b) return; select(b.dataset.k); results.innerHTML = ""; search.value = ""; search.blur(); });
@@ -438,8 +395,8 @@
       const k = e.target.dataset.k, on = e.target.checked;
       if (k === "routes") { if (on) roadLayer.addTo(map); else map.removeLayer(roadLayer); }
       if (k === "noms") showNames = on;
-      if (k === "baronnies") showHold = on;
-      if (k === "frontieres") politicalPane.style.opacity = on ? "" : "0";
+      if (k === "baronnies") showPlaces = on;
+      if (k === "frontieres") regionPane.style.opacity = on ? "" : "0";
       labels._draw();
     });
     const VUES = { westeros: [[480, 250], [2450, 4350]], essos: [[2300, 1900], [4300, 4400]], monde: [[0, 0], [W, H]] };
@@ -464,16 +421,13 @@
       L.popup().setLatLng(e.latlng).setContent(`<strong>Ligne copiée</strong><p>À coller dans donnees/monde/reperes.csv :</p><code>${esc(line)}</code>`).openOn(map);
     });
 
-    // ---------- Zoom ----------
+    // ---------- Demarrage ----------
     map.on("zoomend", () => { restyle(); restyleRoads(); });
     map.fitBounds(vb("westeros"), { paddingTopLeft: [window.innerWidth > 760 ? 320 : 0, 0] });
-    const startMode = new URLSearchParams(location.search).get("mode"); // lien direct vers un mode : cartes.html?mode=cultures
-    if (MODES.some(([k]) => k === startMode)) {
-      mode = startMode;
-      document.querySelectorAll("#map-modes button").forEach((x) => x.classList.toggle("active", x.dataset.m === mode));
-      legend();
-    }
-    restyle(); restyleRoads(); labels._draw();
+    const startMode = new URLSearchParams(location.search).get("mode"); // lien direct : cartes.html?mode=religions
+    if (MODES.some(([k]) => k === startMode)) setMode(startMode); else restyle();
+    restyleRoads(); labels._draw();
+    $("#mm-hint").textContent = "Cliquez sur une région ou sur un lieu";
     const start = decodeURIComponent(location.hash.slice(1));
     if (T[start]) select(start);
   }

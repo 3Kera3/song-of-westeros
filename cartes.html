@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Carte du monde · Song of Westeros</title>
-  <meta name="description" content="Carte interactive de Westeros et d'Essos : royaumes, duchés, comtés, seigneurs en 183 AC, routes et châteaux.">
+  <meta name="description" content="Carte interactive de Westeros et d'Essos : royaumes, cités libres, châteaux et routes des livres.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="assets/style.css?v=9">
+  <link rel="stylesheet" href="assets/style.css?v=10">
 </head>
 <body data-page="cartes">
 <main>
@@ -19,7 +19,7 @@
     <aside class="map-panel" id="map-panel">
       <button type="button" class="panel-toggle" id="panel-toggle" aria-controls="map-panel">Carte du monde</button>
       <div class="panel-body">
-        <input class="search" id="place-search" type="search" placeholder="Rechercher (Winterfell, Tully, Braavos...)" autocomplete="off">
+        <input class="search" id="place-search" type="search" placeholder="Rechercher (Winterfell, Braavos, Stark...)" autocomplete="off">
         <div id="place-results"></div>
         <p class="panel-title">Mode de carte</p>
         <div class="modes" id="map-modes"></div>
@@ -35,13 +35,13 @@
           <label><input type="checkbox" data-k="noms" checked> Noms</label>
           <label><input type="checkbox" data-k="frontieres" checked> Frontières</label>
           <label><input type="checkbox" data-k="routes" checked> Routes</label>
-          <label><input type="checkbox" data-k="baronnies" checked> Châteaux et cités (zoom proche)</label>
+          <label><input type="checkbox" data-k="baronnies" checked> Châteaux et cités</label>
         </div>
         <div class="map-actions">
           <button type="button" id="map-full">Plein écran</button>
           <button type="button" id="map-pick" title="Cliquez sur la carte pour obtenir la ligne à ajouter dans donnees/monde/reperes.csv">Placer un repère</button>
         </div>
-        <p class="panel-more">Situation en 183 AC. Survolez pour identifier, cliquez pour ouvrir la fiche, zoomez pour descendre jusqu'aux comtés puis aux châteaux.</p>
+        <p class="panel-more">Uniquement les lieux, peuples et religions des livres. Zoomez pour faire apparaître les châteaux et cités, cliquez pour ouvrir leur fiche.</p>
       </div>
     </aside>
 
@@ -53,9 +53,9 @@
     </aside>
   </div>
 </main>
-<script src="config.js?v=9"></script>
-<script src="assets/app.js?v=9"></script>
+<script src="config.js?v=10"></script>
+<script src="assets/app.js?v=10"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="assets/monde.js?v=9"></script>
+<script src="assets/monde.js?v=10"></script>
 </body>
 </html>
