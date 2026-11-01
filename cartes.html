@@ -3,44 +3,56 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Carte · Song of Westeros</title>
-  <meta name="description" content="Carte interactive de Westeros et d'Essos : royaumes, cités, châteaux, routes et maisons.">
+  <title>Carte du monde · Song of Westeros</title>
+  <meta name="description" content="Carte interactive de Westeros et d'Essos : royaumes, duchés, comtés, seigneurs en 183 AC, routes et châteaux.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="assets/style.css?v=4">
+  <link rel="stylesheet" href="assets/style.css?v=5">
 </head>
 <body data-page="cartes">
 <main>
   <div id="map-shell">
     <div id="map"></div>
+
     <aside class="map-panel" id="map-panel">
-      <button type="button" class="panel-toggle" id="panel-toggle" aria-controls="map-panel">Carte de Westeros et d'Essos</button>
+      <button type="button" class="panel-toggle" id="panel-toggle" aria-controls="map-panel">Carte du monde</button>
       <div class="panel-body">
-        <input class="search" id="place-search" type="search" placeholder="Rechercher un lieu (Winterfell, Braavos...)" autocomplete="off">
+        <input class="search" id="place-search" type="search" placeholder="Rechercher (Winterfell, Tully, Braavos...)" autocomplete="off">
         <div id="place-results"></div>
+        <p class="panel-title">Mode de carte</p>
+        <div class="modes" id="map-modes"></div>
+        <p class="mm-hint" id="mm-hint"></p>
         <div class="views" id="views">
           <button type="button" data-v="westeros">Westeros</button>
           <button type="button" data-v="essos">Essos</button>
-          <button type="button" data-v="monde">Monde connu</button>
+          <button type="button" data-v="monde">Monde</button>
         </div>
         <p class="panel-title">Calques</p>
-        <div id="layers"></div>
-        <div class="legend">
-          <span><i class="dot city"></i>Cité</span><span><i class="dot town"></i>Ville</span><span><i class="dot seat"></i>Siège de maison</span><span><i class="dot castle"></i>Château</span><span><i class="dot ruin"></i>Ruine</span>
+        <div id="layers">
+          <label><input type="checkbox" data-k="noms" checked> Noms</label>
+          <label><input type="checkbox" data-k="frontieres" checked> Frontières</label>
+          <label><input type="checkbox" data-k="routes" checked> Routes</label>
+          <label><input type="checkbox" data-k="baronnies" checked> Châteaux et cités (zoom proche)</label>
         </div>
         <div class="map-actions">
           <button type="button" id="map-full">Plein écran</button>
-          <button type="button" id="map-pick" title="Cliquez sur la carte pour obtenir la ligne à ajouter dans donnees/lieux.csv">Placer un repère</button>
+          <button type="button" id="map-pick" title="Cliquez sur la carte pour obtenir la ligne à ajouter dans donnees/monde/reperes.csv">Placer un repère</button>
         </div>
-        <p class="panel-more">Cartes d'origine : <a href="images/carte-regions.png" target="_blank">régions</a>, <a href="images/carte-economie.png" target="_blank">ressources</a>, <a href="images/carte-routes.png" target="_blank">routes commerciales</a></p>
+        <p class="panel-more">Situation politique en 183 AC. Survolez une région, cliquez pour la découvrir, zoomez pour descendre jusqu'aux comtés et aux châteaux.</p>
       </div>
+    </aside>
+
+    <aside class="info-panel" id="info-panel" hidden>
+      <button type="button" class="info-close" id="info-close" aria-label="Fermer">×</button>
+      <div id="info"></div>
     </aside>
   </div>
 </main>
+<script src="config.js?v=5"></script>
+<script src="assets/app.js?v=5"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="config.js?v=4"></script>
-<script src="assets/app.js?v=4"></script>
+<script src="assets/monde.js?v=5"></script>
 </body>
 </html>
