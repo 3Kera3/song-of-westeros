@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Armées · Song of Westeros</title>
+  <meta name="description" content="Effectifs militaires des maisons de Westeros.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="armees">
+<main>
+  <div class="wrap">
+    <header class="page-head">
+      <p class="eyebrow">Des chiffres et des lettres</p>
+      <h1>Effectifs des armées</h1>
+      <p>Forces que chaque maison peut lever. Cliquez sur un en-tête de colonne pour trier.</p>
+    </header>
+    <div class="stats" id="army-stats"></div>
+    <div class="toolbar">
+      <input class="search" id="army-search" type="search" placeholder="Rechercher une maison" autocomplete="off">
+      <select id="army-region" aria-label="Région"></select>
+    </div>
+    <div id="army-list" style="padding-bottom:60px"><p class="empty">Chargement...</p></div>
+  </div>
+</main>
+<script src="config.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

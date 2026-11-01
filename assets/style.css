@@ -1,0 +1,184 @@
+/* Song of Westeros - feuille de style
+   Les couleurs principales sont regroupees ci-dessous. */
+:root {
+  --bg: #0d0e11;
+  --surface: #15171c;
+  --surface-2: #1c1f26;
+  --line: #2a2d35;
+  --text: #ece7dd;
+  --muted: #9c978d;
+  --gold: #c9a45c;
+  --gold-soft: rgba(201, 164, 92, .12);
+  --ok: #6fbf8a;
+  --ok-soft: rgba(111, 191, 138, .1);
+  --no: #e06c6c;
+  --no-soft: rgba(224, 108, 108, .1);
+  --warn: #e0a85a;
+  --warn-soft: rgba(224, 168, 90, .1);
+  --radius: 14px;
+  --max: 1120px;
+  --serif: "Cinzel", Georgia, serif;
+  --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 90px; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.65 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--gold); text-decoration: none; }
+a:hover { text-decoration: underline; }
+img { max-width: 100%; display: block; }
+h1, h2, h3 { font-family: var(--serif); font-weight: 600; letter-spacing: .02em; line-height: 1.2; margin: 0; }
+.wrap { max-width: var(--max); margin: 0 auto; padding: 0 24px; }
+
+/* ---------- En-tete ---------- */
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(13, 14, 17, .82);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+.topbar .wrap { display: flex; align-items: center; gap: 24px; height: 68px; }
+.brand { display: flex; align-items: center; gap: 12px; color: var(--text); font-family: var(--serif); font-size: 1.05rem; letter-spacing: .08em; }
+.brand:hover { text-decoration: none; }
+.brand-mark {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: grid; place-items: center;
+  border: 1px solid var(--gold); color: var(--gold); font-size: .72rem; letter-spacing: .05em;
+}
+.nav { display: flex; gap: 4px; margin-left: auto; }
+.nav a { color: var(--muted); padding: 8px 14px; border-radius: 999px; font-size: .93rem; }
+.nav a:hover { color: var(--text); text-decoration: none; background: var(--surface-2); }
+.nav a.active { color: var(--text); background: var(--surface-2); }
+.nav .btn-discord { color: #fff; background: #5865f2; margin-left: 8px; }
+.nav .btn-discord:hover { background: #4752c4; }
+.menu-btn { display: none; margin-left: auto; background: none; border: 1px solid var(--line); color: var(--text); border-radius: 10px; padding: 8px 12px; font: inherit; cursor: pointer; }
+
+@media (max-width: 820px) {
+  .menu-btn { display: block; }
+  .nav { display: none; position: absolute; top: 68px; left: 0; right: 0; flex-direction: column; padding: 12px 24px 20px; background: var(--bg); border-bottom: 1px solid var(--line); }
+  .nav.open { display: flex; }
+  .nav .btn-discord { margin: 8px 0 0; text-align: center; }
+}
+
+/* ---------- Hero ---------- */
+.hero {
+  position: relative; overflow: hidden;
+  padding: 120px 0 110px;
+  border-bottom: 1px solid var(--line);
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 0%, rgba(201, 164, 92, .14), transparent 70%),
+    linear-gradient(180deg, #111318, var(--bg));
+  text-align: center;
+}
+.hero::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: url("../images/carte-regions.png") center 30% / 900px auto no-repeat;
+  opacity: .05; filter: grayscale(1);
+}
+.hero > * { position: relative; z-index: 1; }
+.eyebrow { color: var(--gold); text-transform: uppercase; letter-spacing: .22em; font-size: .75rem; margin: 0 0 18px; }
+.hero h1 { font-size: clamp(2.4rem, 6vw, 4.4rem); }
+.hero p.lead { color: var(--muted); max-width: 560px; margin: 22px auto 34px; font-size: 1.08rem; }
+.actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 999px; font-weight: 500; font-size: .95rem; border: 1px solid var(--line); color: var(--text); background: var(--surface); }
+.btn:hover { text-decoration: none; border-color: var(--gold); }
+.btn-gold { background: var(--gold); color: #17130b; border-color: var(--gold); }
+.btn-gold:hover { background: #d8b673; }
+
+/* ---------- Sections ---------- */
+main { min-height: 60vh; }
+.section { padding: 72px 0; }
+.page-head { padding: 64px 0 36px; border-bottom: 1px solid var(--line); margin-bottom: 40px; }
+.page-head h1 { font-size: clamp(2rem, 4.5vw, 3rem); }
+.page-head p { color: var(--muted); max-width: 680px; margin: 14px 0 0; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.card {
+  display: block; padding: 28px; border-radius: var(--radius);
+  background: var(--surface); border: 1px solid var(--line); color: var(--text);
+  transition: border-color .2s, transform .2s;
+}
+.card:hover { text-decoration: none; border-color: var(--gold); transform: translateY(-2px); }
+.card .icon { font-size: 1.4rem; color: var(--gold); margin-bottom: 18px; font-family: var(--serif); }
+.card h3 { font-size: 1.15rem; margin-bottom: 8px; }
+.card p { color: var(--muted); margin: 0; font-size: .94rem; }
+
+/* ---------- Reglement ---------- */
+.rules-layout { display: grid; grid-template-columns: 240px 1fr; gap: 48px; align-items: start; padding-bottom: 80px; }
+.toc { position: sticky; top: 96px; font-size: .9rem; }
+.toc p { color: var(--muted); text-transform: uppercase; letter-spacing: .15em; font-size: .7rem; margin: 0 0 12px; }
+.toc a { display: block; color: var(--muted); padding: 6px 0 6px 14px; border-left: 1px solid var(--line); }
+.toc a:hover, .toc a.active { color: var(--text); border-color: var(--gold); text-decoration: none; }
+.search { width: 100%; padding: 12px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; margin-bottom: 18px; }
+.search:focus { outline: none; border-color: var(--gold); }
+
+.rule-section { margin-bottom: 56px; }
+.rule-section > h2 { font-size: 1.5rem; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.rule { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px 26px; margin-bottom: 14px; }
+.rule h3 { font-family: var(--sans); font-weight: 600; font-size: 1.08rem; letter-spacing: 0; margin-bottom: 10px; color: var(--gold); }
+.rule p { margin: 0 0 12px; color: #d5d0c6; }
+.rule p:last-child { margin-bottom: 0; }
+.rule ul { list-style: none; padding: 0; margin: 0 0 14px; display: grid; gap: 6px; }
+.rule li { position: relative; padding-left: 26px; color: #d5d0c6; }
+.rule li::before { content: "•"; position: absolute; left: 8px; color: var(--muted); }
+.rule li.no::before { content: "✕"; left: 4px; color: var(--no); }
+.rule li.ok::before { content: "✓"; left: 4px; color: var(--ok); }
+.note { border-radius: 10px; padding: 12px 16px; margin: 0 0 10px; font-size: .95rem; border-left: 3px solid var(--muted); background: var(--surface-2); }
+.note.ok { border-color: var(--ok); background: var(--ok-soft); }
+.note.no { border-color: var(--no); background: var(--no-soft); }
+.note.warn { border-color: var(--warn); background: var(--warn-soft); }
+.note:last-child { margin-bottom: 0; }
+mark { background: var(--gold-soft); color: var(--text); border-radius: 3px; }
+.empty { color: var(--muted); padding: 24px 0; }
+
+@media (max-width: 860px) {
+  .rules-layout { grid-template-columns: 1fr; }
+  .toc { position: static; display: flex; flex-wrap: wrap; gap: 6px; }
+  .toc p { width: 100%; }
+  .toc a { border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; }
+}
+
+/* ---------- Tableaux ---------- */
+.toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; align-items: center; }
+.toolbar .search { margin: 0; flex: 1 1 260px; }
+select { padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; }
+.count { color: var(--muted); font-size: .9rem; margin-left: auto; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+table { width: 100%; border-collapse: collapse; font-size: .93rem; }
+th, td { text-align: left; padding: 11px 16px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { color: var(--muted); font-weight: 500; font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; background: var(--surface-2); position: sticky; top: 0; cursor: pointer; user-select: none; }
+th:hover { color: var(--text); }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: var(--surface-2); }
+.tag { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .8rem; background: var(--surface-2); border: 1px solid var(--line); color: var(--muted); }
+.status { font-size: .82rem; color: var(--muted); margin-top: 12px; }
+
+.region { margin-bottom: 40px; }
+.region-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+.region-head h2 { font-size: 1.35rem; }
+.region-head .total { color: var(--muted); font-size: .92rem; }
+.region-head .total strong { color: var(--gold); font-size: 1.1rem; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 40px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; }
+.stat span { display: block; color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .1em; }
+.stat strong { font-family: var(--serif); font-size: 1.5rem; color: var(--text); }
+
+/* ---------- Cartes ---------- */
+.maps { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; padding-bottom: 80px; }
+.map { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; color: var(--text); }
+.map:hover { text-decoration: none; border-color: var(--gold); }
+.map img { width: 100%; height: 420px; object-fit: cover; object-position: top; }
+.map div { padding: 18px 20px; }
+.map h3 { font-size: 1.05rem; margin-bottom: 4px; }
+.map p { margin: 0; color: var(--muted); font-size: .9rem; }
+
+/* ---------- Pied de page ---------- */
+.footer { border-top: 1px solid var(--line); padding: 36px 0; color: var(--muted); font-size: .88rem; }
+.footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }

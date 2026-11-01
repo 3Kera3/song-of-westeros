@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Règlement · Song of Westeros</title>
+  <meta name="description" content="Règlement du serveur Song of Westeros.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="reglement">
+<main>
+  <div class="wrap">
+    <header class="page-head">
+      <p class="eyebrow">Règles officielles</p>
+      <h1>Règlement du serveur</h1>
+      <p>En rejoignant Song of Westeros, vous acceptez ces règles. En cas de doute, ouvrez un ticket staff sur le Discord.</p>
+    </header>
+    <div class="rules-layout">
+      <nav class="toc" id="toc" aria-label="Sommaire"></nav>
+      <div>
+        <input class="search" id="rule-search" type="search" placeholder="Rechercher une règle (ex. metagaming, accents, RPK)" autocomplete="off">
+        <div id="rules"><p class="empty">Chargement...</p></div>
+        <p class="empty" id="rules-empty" hidden>Aucune règle ne correspond à votre recherche.</p>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="config.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Noms · Song of Westeros</title>
+  <meta name="description" content="Noms et prénoms de Westeros pour créer votre personnage.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="noms">
+<main>
+  <div class="wrap" style="padding-bottom:60px">
+    <header class="page-head">
+      <p class="eyebrow">Des chiffres et des lettres</p>
+      <h1>Noms et prénoms de Westeros</h1>
+      <p>Trouvez l'inspiration pour votre personnage. Filtrez par genre, rang ou région.</p>
+    </header>
+    <div class="toolbar">
+      <input class="search" id="names-search" type="search" placeholder="Rechercher un prénom ou un nom" autocomplete="off">
+      <select class="names-filter" id="f-genre" aria-label="Genre"></select>
+      <select class="names-filter" id="f-rang" aria-label="Rang"></select>
+      <select class="names-filter" id="f-region" aria-label="Région"></select>
+      <span class="count" id="names-count"></span>
+    </div>
+    <div id="names-table"><p class="empty">Chargement...</p></div>
+    <p class="status" id="names-status"></p>
+  </div>
+</main>
+<script src="config.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
