@@ -12,9 +12,10 @@
   function layout() {
     const here = location.pathname.split("/").pop() || "index.html";
     const links = cfg.menu.map((m) => `<a href="${m.lien}"${m.lien === here ? ' class="active"' : ""}>${esc(m.titre)}</a>`).join("");
+    document.head.insertAdjacentHTML("beforeend", `<link rel="icon" type="image/png" href="images/favicon.png">`);
     document.body.insertAdjacentHTML("afterbegin", `
       <header class="topbar"><div class="wrap">
-        <a class="brand" href="index.html"><span class="brand-mark">${esc(cfg.sigle)}</span>${esc(cfg.nom)}</a>
+        <a class="brand" href="index.html"><img class="brand-logo" src="images/logo.png" alt="">${esc(cfg.nom)}</a>
         <button class="menu-btn" aria-expanded="false" aria-controls="nav">Menu</button>
         <nav class="nav" id="nav">${links}<a class="btn-discord" href="${cfg.discord}" target="_blank" rel="noopener">Discord</a></nav>
       </div></header>`);
@@ -113,6 +114,99 @@
     if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView();
   }
 
+  // ---------- Texte suivi (lore) ----------
+  function renderProse(md) {
+    md = md.replace(/<!--[\s\S]*?-->/g, "");
+    $("#prose").innerHTML = md.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean).map((b) => {
+      let m;
+      if ((m = b.match(/^##?\s+(.+)/))) return `<h2>${inline(m[1])}</h2>`;
+      if (b.startsWith(">")) return `<blockquote>${inline(b.replace(/^>\s?/gm, "").replace(/\n/g, " "))}</blockquote>`;
+      return `<p>${inline(b.replace(/\n/g, " "))}</p>`;
+    }).join("");
+  }
+
+  // ---------- Cartes interactives (Leaflet) ----------
+  async function cartes() {
+    const lieux = await loadCSV("donnees/lieux.csv").catch(() => []);
+    const shell = $("#map-shell");
+    const map = L.map("map", { crs: L.CRS.Simple, zoomSnap: 0.25, zoomDelta: 0.5, wheelPxPerZoomLevel: 120, attributionControl: false, maxBoundsViscosity: 0.9 });
+    const markers = L.layerGroup().addTo(map);
+    const size = (src) => new Promise((ok, ko) => { const im = new Image(); im.onload = () => ok([im.naturalWidth, im.naturalHeight]); im.onerror = ko; im.src = src; });
+    const pin = L.divIcon({ className: "pin", iconSize: [16, 16] });
+    let overlay, current, h = 0, picking = false;
+
+    $("#map-tabs").innerHTML = cfg.cartes.map((c, i) => `<button type="button" data-i="${i}">${esc(c.titre)}</button>`).join("");
+    $("#map-tabs").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) show(+b.dataset.i); });
+
+    async function show(i) {
+      current = cfg.cartes[i];
+      document.querySelectorAll("#map-tabs button").forEach((b) => b.classList.toggle("active", +b.dataset.i === i));
+      const [w, hh] = await size(current.image); h = hh;
+      const bounds = [[0, 0], [h, w]];
+      if (overlay) map.removeLayer(overlay);
+      overlay = L.imageOverlay(current.image, bounds).addTo(map);
+      map.setMaxBounds(null);
+      map.setMinZoom(-5);
+      map.setMaxZoom(5);
+      map.fitBounds(bounds);
+      map.setMinZoom(map.getZoom() - 0.5);
+      map.setMaxZoom(map.getZoom() + 4);
+      map.setMaxBounds(L.latLngBounds(bounds).pad(0.15));
+      $("#map-desc").textContent = current.description || "";
+      $("#map-open").href = current.image;
+
+      markers.clearLayers();
+      const pts = lieux.filter((l) => l["Carte"] === current.id);
+      const items = pts.map((l) => {
+        const mk = L.marker([h - Number(l["Y"]), Number(l["X"])], { icon: pin, title: l["Nom"] })
+          .bindTooltip(esc(l["Nom"]), { direction: "top", offset: [0, -8] })
+          .bindPopup(`<strong>${esc(l["Nom"])}</strong>${l["Maison"] ? `<em>${esc(l["Maison"])}</em>` : ""}${l["Description"] ? `<p>${esc(l["Description"])}</p>` : ""}`)
+          .addTo(markers);
+        return { l, mk };
+      });
+      const list = $("#map-places"), search = $("#place-search");
+      search.hidden = !pts.length; search.value = "";
+      const draw = () => {
+        const q = norm(search.value.trim());
+        const shown = items.filter(({ l }) => !q || norm(l["Nom"] + " " + l["Maison"]).includes(q));
+        list.innerHTML = shown.length ? shown.map(({ l }) => `<button type="button" data-k="${items.findIndex((x) => x.l === l)}"><strong>${esc(l["Nom"])}</strong><span>${esc(l["Maison"])}</span></button>`).join("")
+          : `<p class="empty">${pts.length ? "Aucun lieu ne correspond." : "Aucun repère sur cette carte."}</p>`;
+      };
+      search.oninput = draw;
+      list.onclick = (e) => {
+        const b = e.target.closest("button"); if (!b) return;
+        const { mk } = items[+b.dataset.k];
+        map.flyTo(mk.getLatLng(), map.getMaxZoom() - 2, { duration: 0.8 });
+        map.once("moveend", () => mk.openPopup());
+      };
+      draw();
+      history.replaceState(null, "", "#" + current.id);
+    }
+
+    // Plein ecran
+    $("#map-full").addEventListener("click", () => document.fullscreenElement ? document.exitFullscreen() : shell.requestFullscreen?.());
+    document.addEventListener("fullscreenchange", () => {
+      $("#map-full").textContent = document.fullscreenElement ? "Quitter le plein écran" : "Plein écran";
+      setTimeout(() => map.invalidateSize(), 100);
+    });
+
+    // Mode staff : cliquer sur la carte donne la ligne a coller dans donnees/lieux.csv
+    $("#map-pick").addEventListener("click", () => {
+      picking = !picking;
+      $("#map-pick").classList.toggle("active", picking);
+      shell.classList.toggle("picking", picking);
+    });
+    map.on("click", (e) => {
+      if (!picking) return;
+      const line = `${current.id},Nom du lieu,Maison,Description,${Math.round(e.latlng.lng)},${Math.round(h - e.latlng.lat)}`;
+      navigator.clipboard?.writeText(line).catch(() => {});
+      L.popup().setLatLng(e.latlng).setContent(`<strong>Ligne copiée</strong><p>À coller dans donnees/lieux.csv :</p><code>${esc(line)}</code>`).openOn(map);
+    });
+
+    const start = cfg.cartes.findIndex((c) => "#" + c.id === location.hash);
+    show(start < 0 ? 0 : start);
+  }
+
   // ---------- Tableau triable generique ----------
   function table(el, cols, rows) {
     let key = null, dir = 1;
@@ -201,7 +295,10 @@
 
   layout();
   const fail = (sel) => (e) => { console.error(e); const el = $(sel); if (el) el.innerHTML = `<p class="empty">Impossible de charger les données (${esc(e.message)}).</p>`; };
-  if (page === "reglement") fetch("contenu/reglement.md", { cache: "no-cache" }).then((r) => r.text()).then(renderRules).catch(fail("#rules"));
+  const md = (url) => fetch(url, { cache: "no-cache" }).then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); });
+  if (page === "doc") md(document.body.dataset.src).then(renderRules).catch(fail("#rules"));
+  if (page === "lore") md("contenu/lore.md").then(renderProse).catch(fail("#prose"));
+  if (page === "cartes") cartes().catch(fail("#map"));
   if (page === "armees") armees().catch(fail("#army-list"));
   if (page === "noms") noms().catch(fail("#names-table"));
 })();

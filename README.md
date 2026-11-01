@@ -18,12 +18,17 @@ Pour annuler une erreur : onglet **Commits**, ouvrez le commit fautif, puis reve
 
 | Je veux changer... | Fichier |
 |---|---|
+| Le lore | `contenu/lore.md` |
 | Le règlement | `contenu/reglement.md` |
+| Le guide du RP passif | `contenu/rp-passif.md` (même mise en forme que le règlement) |
+| Les repères sur les cartes | `donnees/lieux.csv` |
+| Ajouter une carte | `images/` + liste `cartes` dans `config.js` |
 | Le lien Discord, le nom, le menu | `config.js` |
 | Les effectifs des armées | `donnees/armees.csv` |
 | Les totaux de levée par région | `donnees/regions.csv` |
 | Les noms et prénoms | **Directement dans le Google Sheet** (voir plus bas) |
-| Les cartes | `images/` (remplacer le fichier en gardant le même nom) |
+| Une image de carte | `images/` (remplacer le fichier en gardant le même nom) |
+| Le logo | `images/logo.png` (512x512) et `images/favicon.png` (64x64) |
 | Les couleurs | `assets/style.css` (variables en haut du fichier) |
 | Les textes de l'accueil | `index.html` |
 
@@ -61,6 +66,18 @@ Le Nord,Maison Stark,6400,5400,1000,,,
 Une case vide s'affiche « - ». Le nom de région doit être écrit exactement comme dans `donnees/regions.csv`.
 GitHub affiche les CSV sous forme de tableau, ce qui aide à vérifier.
 
+### Cartes interactives
+
+Les cartes utilisent [Leaflet](https://leafletjs.com) : zoom à la molette ou au pincement, déplacement, plein écran,
+repères cliquables et recherche de lieu.
+
+Pour ajouter un repère :
+1. Sur la page Cartes, cliquez **Placer un repère**, puis cliquez à l'endroit voulu sur la carte.
+2. Une ligne est copiée automatiquement, par exemple `regions,Nom du lieu,Maison,Description,432,660`.
+3. Collez-la à la fin de `donnees/lieux.csv` et remplacez `Nom du lieu`, `Maison` et `Description`.
+
+Si un texte contient une virgule, mettez-le entre guillemets : `"Siège des Stark, gardiens du Nord"`.
+
 ### Noms (Google Sheet en direct)
 
 La page **Noms** lit en direct l'onglet « Noms et prénoms de Westeros » du Google Sheet
@@ -71,12 +88,13 @@ Si le Sheet est inaccessible, le site affiche la copie de secours `donnees/noms.
 
 ## Ajouter une page
 
-Copiez `cartes.html`, renommez-la, changez le titre et le contenu, puis ajoutez-la au `menu` dans `config.js`.
+Copiez `rp-passif.html` (page de texte) ou `lore.html`, renommez-la, changez le titre et le contenu, puis ajoutez-la au `menu` dans `config.js`.
 
 ## Structure
 
 ```
-index.html, reglement.html, armees.html, noms.html, cartes.html   pages
+index.html, lore.html, reglement.html, rp-passif.html,
+armees.html, noms.html, cartes.html                pages
 config.js            réglages (Discord, menu, Google Sheet)
 contenu/             textes (règlement)
 donnees/             tableaux CSV
