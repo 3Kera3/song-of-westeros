@@ -210,6 +210,7 @@ tbody tr:hover { background: var(--surface-2); }
 .panel-title { margin: 4px 0 0; color: var(--muted); text-transform: uppercase; letter-spacing: .14em; font-size: .68rem; }
 .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .modes button:last-child { grid-column: span 2; }
+.modes button:nth-child(2) { grid-column: span 1; }
 .modes button, .views button, .map-actions button {
   font: inherit; font-size: .82rem; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 7px 6px; cursor: pointer;
 }
@@ -250,30 +251,20 @@ tbody tr:hover { background: var(--surface-2); }
 .info-kids i { font-style: normal; color: var(--gold); flex: none; }
 .info-kids .sw { width: 10px; height: 10px; border-radius: 3px; border: 1px solid rgba(0, 0, 0, .5); }
 
-/* Noms peints sur la carte */
-.ml { pointer-events: none; }
-.ml span {
-  position: absolute; left: 0; top: 0; white-space: nowrap; font-family: var(--serif); font-weight: 600; color: #2b1d10; line-height: 1;
-  text-shadow: 0 0 2px rgba(236, 222, 190, .9), 0 0 5px rgba(236, 222, 190, .7); transform-origin: 0 0;
+/* Noms et chateaux (canvas) */
+.map-labels { transition: opacity .25s ease; }
+.map-labels.fading { opacity: 0; transition: none; }
+#map.on-hold .leaflet-interactive, #map.on-hold { cursor: pointer; }
+.hovercard {
+  position: absolute; left: 0; top: 0; z-index: 1100; pointer-events: none; padding: 6px 12px; border-radius: 8px;
+  background: rgba(20, 18, 15, .93); border: 1px solid #5a4a30; box-shadow: 0 6px 18px rgba(0, 0, 0, .4); display: flex; flex-direction: column;
 }
-.ml-e span { font-weight: 700; letter-spacing: .28em; text-transform: uppercase; color: #24170c; }
-.ml-k span { letter-spacing: .18em; text-transform: uppercase; color: #33230f; }
-.ml-d span { letter-spacing: .06em; color: #3a2814; }
-.ml-c span { font-family: var(--sans); font-weight: 600; color: #3a2a18; }
-.ml span { transform-origin: center; }
-
-/* Chateaux, cites, temples */
-.hold { pointer-events: auto; }
-.hold i {
-  position: absolute; transform: translate(-50%, -50%); font-style: normal; font-size: 15px; line-height: 1; color: #2b1d10;
-  text-shadow: 0 0 3px #efe2c0, 0 0 6px #efe2c0; cursor: pointer;
-}
-.hold-city_holding i { color: #6e3b12; }
-.hold-church_holding i, .hold-monastery_holding i { color: #3d4f7a; }
-.hold span {
-  position: absolute; left: 9px; top: -7px; white-space: nowrap; font-size: 11px; font-weight: 600; color: #2b1d10;
-  text-shadow: 0 0 2px #efe2c0, 0 0 4px #efe2c0; pointer-events: none;
-}
+.hovercard[hidden] { display: none; }
+.hovercard strong { font-family: var(--serif); color: #f3dfaf; font-size: .95rem; font-weight: 600; }
+.hovercard span { color: var(--muted); font-size: .76rem; }
+.info-kids i { width: 10px; height: 10px; border-radius: 3px; border: 1px solid rgba(0, 0, 0, .5); flex: none; }
+.info-date { margin: 16px 18px 0; color: var(--muted); font-size: .72rem; font-style: italic; }
+.info-list dd span { display: block; }
 .rep i { display: block; width: 16px; height: 16px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: #b8322a; border: 2px solid #f3d27a; box-shadow: 0 2px 6px rgba(0, 0, 0, .5); }
 
 /* Elements Leaflet */

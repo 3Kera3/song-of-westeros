@@ -21,8 +21,8 @@ Pour annuler une erreur : onglet **Commits**, ouvrez le commit fautif, puis reve
 | Le lore | `contenu/lore.md` |
 | Le règlement | `contenu/reglement.md` |
 | Le guide du RP passif | `contenu/rp-passif.md` (même mise en forme que le règlement) |
-| Les lieux et maisons sur la carte | `donnees/lieux.csv` |
-| Les noms français de la carte | `donnees/carte-noms.csv` |
+| Les noms français de la carte | `donnees/monde/traductions.csv` (prioritaire) |
+| Les repères du staff sur la carte | `donnees/monde/reperes.csv` |
 | Le lien Discord, le nom, le menu | `config.js` |
 | Les effectifs des armées | `donnees/armees.csv` |
 | Les totaux de levée par région | `donnees/regions.csv` |
@@ -66,37 +66,31 @@ Le Nord,Maison Stark,6400,5400,1000,,,
 Une case vide s'affiche « - ». Le nom de région doit être écrit exactement comme dans `donnees/regions.csv`.
 GitHub affiche les CSV sous forme de tableau, ce qui aide à vérifier.
 
-### Carte interactive (Westeros et Essos)
+### Carte du monde (Westeros et Essos)
 
-La carte est dessinée à partir de données géographiques (GeoJSON) avec [Leaflet](https://leafletjs.com) :
-royaumes, cités, châteaux, ruines, routes, rivières, forêts, montagnes, mers et le Mur.
-Les fichiers géographiques sont dans `donnees/carte/` (pas besoin d'y toucher).
+La carte reprend la carte et les données du mod **A Game of Thrones** pour Crusader Kings III :
+régions, territoires, duchés, comtés, châteaux et cités, seigneurs en 183 AC, routes.
+Les fichiers `donnees/monde/*.json` et `monde/tuiles/` sont générés : pas besoin d'y toucher.
 
-**Rattacher une maison ou une description à un lieu existant** (`donnees/lieux.csv`) :
+**Noms français** : trois fichiers `Original,Français`, du plus prioritaire au moins prioritaire :
 
-```
-Lieu,Maison,Description,Lat,Lng
-Winterfell,Stark,Siège des seigneurs du Nord.,,
-```
+1. `donnees/monde/traductions.csv` : vos corrections (régions, cultures, religions, noms officiels). C'est ici qu'il faut corriger.
+2. `donnees/monde/traductions-mod.csv` : noms propres au mod, traduits à la main.
+3. `donnees/monde/traductions-auto.csv` : châteaux et cités traduits automatiquement (à corriger au besoin dans le fichier 1).
 
-- `Lieu` : le nom du lieu, en VO ou en VF (comme affiché sur la carte).
-- `Maison` : écrite comme dans `donnees/armees.csv` sans le mot « Maison » (ex. `Ferboys`).
-  La fiche du lieu affiche alors automatiquement les levées, chevaliers et navires de la maison.
-- `Lat` et `Lng` : à laisser vides pour un lieu qui existe déjà sur la carte.
+Les noms officiels de la VF (Port-Réal, Vivesaigues, Corneilla...) viennent d'A Wiki of Ice and Fire / La Garde de Nuit.
+Les noms exotiques d'Essos restent tels quels, comme dans les livres.
 
-**Ajouter un nouveau lieu** :
+**Ajouter un repère** (`donnees/monde/reperes.csv`) :
 1. Sur la page Carte, cliquez **Placer un repère**, puis cliquez à l'endroit voulu.
-2. Une ligne est copiée automatiquement, par exemple `Nom du lieu,Maison,Description,26.61,14.56`.
-3. Collez-la à la fin de `donnees/lieux.csv` et remplacez `Nom du lieu`, `Maison` et `Description`.
+2. Une ligne est copiée, par exemple `Nom du repère,Description,1353,1448`.
+3. Collez-la à la fin du fichier et remplacez le nom et la description.
 
-Si un texte contient une virgule, mettez-le entre guillemets : `"Siège des Stark, gardiens du Nord"`.
+Si un texte contient une virgule, mettez-le entre guillemets.
 
-**Traduire un nom** (`donnees/carte-noms.csv`) : une ligne `Nom original,Nom français`.
-Les noms absents de ce fichier restent en VO.
+**Forces des maisons** : la fiche d'un fief affiche les levées de la maison du seigneur si elle figure dans `donnees/armees.csv`.
 
-**Crédits obligatoires** : les données de la carte sont sous licence CC BY-NC-SA 3.0
-(cadaei, theMountainGoat, Tear, univers © G. R. R. Martin), voir `donnees/carte/LICENCE.txt`.
-Usage non commercial uniquement, et le crédit en bas de la carte doit rester affiché.
+**Crédits** : le crédit affiché en bas de la carte (mod AGOT, A Wiki of Ice and Fire, La Garde de Nuit) doit rester visible.
 
 ### Noms (Google Sheet en direct)
 

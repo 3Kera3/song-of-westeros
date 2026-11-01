@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="assets/style.css?v=5">
+  <link rel="stylesheet" href="assets/style.css?v=7">
 </head>
 <body data-page="cartes">
 <main>
@@ -40,9 +40,11 @@
           <button type="button" id="map-full">Plein écran</button>
           <button type="button" id="map-pick" title="Cliquez sur la carte pour obtenir la ligne à ajouter dans donnees/monde/reperes.csv">Placer un repère</button>
         </div>
-        <p class="panel-more">Situation politique en 183 AC. Survolez une région, cliquez pour la découvrir, zoomez pour descendre jusqu'aux comtés et aux châteaux.</p>
+        <p class="panel-more">Situation en 183 AC. Survolez pour identifier, cliquez pour ouvrir la fiche, zoomez pour descendre jusqu'aux comtés puis aux châteaux.</p>
       </div>
     </aside>
+
+    <div class="hovercard" id="hovercard" hidden></div>
 
     <aside class="info-panel" id="info-panel" hidden>
       <button type="button" class="info-close" id="info-close" aria-label="Fermer">×</button>
@@ -50,9 +52,9 @@
     </aside>
   </div>
 </main>
-<script src="config.js?v=5"></script>
-<script src="assets/app.js?v=5"></script>
+<script src="config.js?v=7"></script>
+<script src="assets/app.js?v=7"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="assets/monde.js?v=5"></script>
+<script src="assets/monde.js?v=7"></script>
 </body>
 </html>
