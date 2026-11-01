@@ -68,7 +68,15 @@
     const target = () => (rule || sec || (sec = { title: "", rules: [], body: [] })).body;
     const flushPara = () => { if (para.length) { target().push(`<p>${inline(para.join(" "))}</p>`); para = []; } };
     const flushList = () => { if (list) { target().push(`<ul>${list.join("")}</ul>`); list = null; } };
-    const flush = () => { flushPara(); flushList(); };
+    let rows = null;
+    const flushTable = () => {
+      if (!rows) return;
+      const cells = (r) => r.replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
+      const [head, ...body] = rows.filter((r) => !/^\|[\s:|-]+\|?$/.test(r)).map(cells);
+      target().push(`<div class="table-wrap"><table><thead><tr>${head.map((c) => `<th>${inline(c)}</th>`).join("")}</tr></thead><tbody>${body.map((r) => `<tr>${r.map((c) => `<td>${inline(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`);
+      rows = null;
+    };
+    const flush = () => { flushPara(); flushList(); flushTable(); };
 
     for (const raw of md.split(/\r?\n/)) {
       const line = raw.trim();
@@ -76,9 +84,10 @@
       if (!line) { flush(); continue; }
       if ((m = line.match(/^#\s+(.+)/))) { flush(); rule = null; sec = { title: m[1], rules: [], body: [] }; sections.push(sec); continue; }
       if ((m = line.match(/^##\s+(.+)/))) { flush(); if (!sec) { sec = { title: "", rules: [], body: [] }; sections.push(sec); } rule = { title: m[1], body: [] }; sec.rules.push(rule); continue; }
+      if (line.startsWith("|")) { flushPara(); flushList(); (rows ||= []).push(line); continue; }
       if ((m = line.match(/^[-*]\s+(.+)/))) { flushPara(); (list ||= []).push(`<li class="${kind(m[1])}">${inline(strip(m[1]))}</li>`); continue; }
       if ((m = line.match(/^>\s?(.*)/))) { flush(); target().push(`<p class="note ${kind(m[1])}">${inline(strip(m[1]))}</p>`); continue; }
-      flushList(); para.push(line);
+      flushList(); flushTable(); para.push(line);
     }
     flush();
 

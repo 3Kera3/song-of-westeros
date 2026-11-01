@@ -126,6 +126,11 @@ main { min-height: 60vh; }
 .rule li::before { content: "•"; position: absolute; left: 8px; color: var(--muted); }
 .rule li.no::before { content: "✕"; left: 4px; color: var(--no); }
 .rule li.ok::before { content: "✓"; left: 4px; color: var(--ok); }
+.rule .table-wrap { margin: 0 0 14px; background: var(--bg); }
+.rule .table-wrap:last-child { margin-bottom: 0; }
+.rule th { cursor: default; position: static; }
+.rule td { white-space: normal; color: #d5d0c6; }
+.rule td:first-child { color: var(--text); font-weight: 500; }
 .note { border-radius: 10px; padding: 12px 16px; margin: 0 0 10px; font-size: .95rem; border-left: 3px solid var(--muted); background: var(--surface-2); }
 .note.ok { border-color: var(--ok); background: var(--ok-soft); }
 .note.no { border-color: var(--no); background: var(--no-soft); }
