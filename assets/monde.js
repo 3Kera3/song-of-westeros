@@ -17,7 +17,15 @@
   };
   // Plages de zoom ou chaque niveau est lisible (noms et clic)
   const WIN = { e: [0, 3], k: [3, 3.75], d: [3.75, 4.55], c: [4.55, 5.6] }; // un seul niveau de noms a la fois
-  const MODES = [["royaumes", "Royaumes"], ["maisons", "Maisons (183 AC)"], ["cultures", "Cultures"], ["religions", "Religions"], ["papier", "Carte seule"]];
+  // Placement des noms des grandes regions, ajuste a la main (position en pixels de la carte source, angle en degres)
+  const LABEL_FIX = {
+    e_the_reach: { l: [1010, 3640], a: -20 },
+    e_the_stormlands: { l: [1830, 3430], a: 0, w: 620 },
+    e_the_crownlands: { l: [1830, 3075], a: -12, w: 560 },
+    e_the_riverlands: { l: [1330, 2830], a: 0 },
+    e_the_westerlands: { l: [880, 3020], a: 35 },
+  };
+  const MODES = [["royaumes", "Royaumes"], ["cultures", "Cultures"], ["religions", "Religions"], ["papier", "Carte seule"]];
 
   const $ = (s, r = document) => r.querySelector(s);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -40,14 +48,6 @@
     if (cell || row.length) { row.push(cell); rows.push(row); }
     const head = (rows.shift() || []).map((h) => h.trim());
     return rows.filter((r) => r.some((v) => v.trim())).map((r) => Object.fromEntries(head.map((h, i) => [h, (r[i] ?? "").trim()])));
-  }
-
-  // Couleur douce et stable a partir d'un nom (maisons, cultures, religions)
-  function hashColor(s) {
-    let h = 2166136261;
-    for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
-    h >>>= 0;
-    return `hsl(${h % 360}, ${38 + (h >> 9) % 18}%, ${44 + (h >> 17) % 16}%)`;
   }
 
   async function init() {
@@ -91,13 +91,20 @@
       feats[f.id] = lay; byTier[t].push(lay);
     }));
 
-    let mode = "royaumes", hovered = null, selected = null, picking = false;
+    let mode = "royaumes", hovered = null, selected = null, picking = false, legendHi = null, legendPin = null;
+    // Categories (cultures, religions) : couleurs bien distinctes, attribuees par ordre d'importance
+    const FIELD = { cultures: "cu", religions: "fa" };
+    const cats = {};
+    Object.entries(FIELD).forEach(([m, f]) => {
+      const count = {};
+      byTier.c.forEach((l) => { const v = T[l.fid]?.[f]; if (v) count[v] = (count[v] || 0) + 1; });
+      const list = Object.entries(count).sort((a, b) => b[1] - a[1]);
+      cats[m] = new Map(list.map(([v, n], i) => [v, { n, color: `hsl(${Math.round((i * 137.508) % 360)}, ${i % 2 ? 42 : 55}%, ${i % 3 === 0 ? 50 : i % 3 === 1 ? 60 : 42}%)` }]));
+    });
     const colorFor = (k) => {
       const t = T[k];
       if (mode === "royaumes") return t.c || "#8a8a8a";
-      if (mode === "maisons") return t.hh ? hashColor(t.hh) : "#9a9184";
-      if (mode === "cultures") return t.cu ? hashColor(t.cu) : "#9a9184";
-      if (mode === "religions") return t.fa ? hashColor("foi" + t.fa) : "#9a9184";
+      if (FIELD[mode]) { const v = t[FIELD[mode]]; return v ? cats[mode].get(v)?.color || "#9a9184" : "#9a9184"; }
       return null;
     };
     const fillTier = () => (mode === "royaumes" ? "e" : mode === "papier" ? null : "c");
@@ -114,6 +121,8 @@
       if (t === fillTier()) {
         s.fill = true; s.fillColor = colorFor(lay.fid);
         s.fillOpacity = t === "e" ? clamp(0.46 - (z - 2.5) * 0.12, 0.1, 0.46) : clamp(0.55 - (z - 3.5) * 0.1, 0.22, 0.55);
+        const focus = legendHi || legendPin;
+        if (focus && FIELD[mode]) s.fillOpacity = T[lay.fid]?.[FIELD[mode]] === focus ? 0.78 : 0.06;
       }
       if (lay === hovered) { s.fill = true; s.fillColor = "#fff3cf"; s.fillOpacity = 0.28; s.stroke = true; s.opacity = 0.9; }
       if (lay === selected) { s.stroke = true; s.color = "#f3d27a"; s.weight = 3; s.opacity = 1; }
@@ -135,7 +144,26 @@
       const b = e.target.closest("button"); if (!b) return;
       mode = b.dataset.m;
       document.querySelectorAll("#map-modes button").forEach((x) => x.classList.toggle("active", x === b));
-      restyle();
+      legendHi = legendPin = null;
+      legend(); restyle();
+    });
+
+    // ---------- Legende (cultures, religions) ----------
+    function legend() {
+      const el = $("#legend");
+      if (!FIELD[mode]) { el.hidden = true; el.innerHTML = ""; return; }
+      el.hidden = false;
+      el.innerHTML = `<p class="panel-title">Légende · ${mode === "cultures" ? "cultures" : "religions"}</p><div class="legend-list">` +
+        [...cats[mode]].map(([v, c]) => `<button type="button" data-v="${esc(v)}"${legendPin === v ? ' class="pinned"' : ""}><i style="background:${c.color}"></i><span>${esc(trd(v))}</span><b>${c.n}</b></button>`).join("") + "</div>";
+    }
+    const restyleCounties = () => byTier.c.forEach((l) => l.setStyle(styleFor(l)));
+    $("#legend").addEventListener("mouseover", (e) => { const b = e.target.closest("button[data-v]"); if (b && b.dataset.v !== legendHi) { legendHi = b.dataset.v; restyleCounties(); } });
+    $("#legend").addEventListener("mouseleave", () => { if (legendHi) { legendHi = null; restyleCounties(); } });
+    $("#legend").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-v]"); if (!b) return;
+      legendPin = legendPin === b.dataset.v ? null : b.dataset.v;
+      document.querySelectorAll("#legend button").forEach((x) => x.classList.toggle("pinned", x.dataset.v === legendPin));
+      restyleCounties();
     });
 
     // ---------- Routes ----------
@@ -158,7 +186,9 @@
       let name = nom(f.id);
       if ((t === "e" || t === "k") && name.length > 12) name = name.replace(/^(Les |Le |La |L')/, ""); // plus court sur la carte
       const win = t === "e" && f.id.startsWith("k_") ? [0, WIN.d[0]] : WIN[t]; // cites libres : region et territoire a la fois
-      items.push({ kind: "label", t, rank, win, k: f.id, name, ll: P(f.l[0], f.l[1]), w: f.w, h: f.h, a: (f.a * Math.PI) / 180, area: f.ar });
+      const fix = LABEL_FIX[f.id] || {};
+      const [lx, ly] = fix.l || f.l;
+      items.push({ kind: "label", t, rank, win, k: f.id, name, ll: P(lx, ly), w: fix.w || f.w, h: f.h, a: ((fix.a ?? f.a) * Math.PI) / 180, area: f.ar });
     }));
     const holdings = Object.entries(T).filter(([, t]) => t.t === "b" && t.hold && HOLD[t.hold] && t.xy)
       .map(([k, t]) => ({ kind: "hold", k, name: nom(k), hold: t.hold, cap: !!t.cap, ll: P(t.xy[0], t.xy[1]) }));
@@ -166,7 +196,7 @@
     holdings.sort((a, b) => b.cap - a.cap || (a.hold === "city_holding" ? -1 : 1));
 
     const STYLE = {
-      e: { font: "700", fam: "Cinzel", spacing: 0.18, upper: true, max: 36, min: 9.5, color: "#24170c" },
+      e: { font: "700", fam: "Cinzel", spacing: 0.16, upper: true, max: 26, min: 9.5, color: "#24170c" },
       k: { font: "600", fam: "Cinzel", spacing: 0.14, upper: true, max: 22, min: 10, color: "#33230f" },
       d: { font: "600", fam: "Cinzel", spacing: 0.05, upper: false, max: 19, min: 11, color: "#3a2814" },
       c: { font: "600", fam: "Inter", spacing: 0.02, upper: false, max: 14, min: 10.5, color: "#3a2a18" },
@@ -252,17 +282,25 @@
             const f = Math.min((it.h * s * 0.55) / (ls.length === 1 ? 1 : 1.9), (it.w * s * 0.95) / (longest * cw));
             if (f > fs * 1.08) { fs = f; lines = ls; }
           });
-          if (fs < st.min) continue;
+          if (fs < st.min) { if (it.t !== "e") continue; fs = st.min; } // une region garde toujours un nom lisible
           fs = Math.min(fs, st.max);
           const [px, py] = toCanvas(it.ll);
           if (px < -200 || py < -100 || px > w + 200 || py > h + 100) continue;
-          ctx.font = `${st.font} ${fs.toFixed(1)}px ${st.fam}, serif`;
-          if ("letterSpacing" in ctx) ctx.letterSpacing = (st.spacing * fs).toFixed(1) + "px";
-          const tw = Math.max(...lines.map((l) => ctx.measureText(l).width)), th = fs * (lines.length === 1 ? 1 : 2.1);
-          const box = rect(px, py, tw / 2 + 4, th / 2 + 2, it.a);
-          if (!free(box)) continue;
+          const ang = it.t === "e" || it.t === "k" ? clamp(it.a, -0.45, 0.45) : it.a;
+          let box = null, size = fs;
+          for (const k of [1, 0.82, 0.66, 0.52]) { // si la place manque, on essaie plus petit avant d'abandonner
+            size = fs * k;
+            if (size < st.min * 0.85) break;
+            ctx.font = `${st.font} ${size.toFixed(1)}px ${st.fam}, serif`;
+            if ("letterSpacing" in ctx) ctx.letterSpacing = (st.spacing * size).toFixed(1) + "px";
+            const tw = Math.max(...lines.map((l) => ctx.measureText(l).width)), th = size * (lines.length === 1 ? 1 : 2.1);
+            const b = rect(px, py, tw / 2 + 4, th / 2 + 2, ang);
+            if (free(b)) { box = b; break; }
+          }
+          if (!box) continue;
+          fs = size;
           boxes.push(box);
-          ctx.save(); ctx.translate(px, py); ctx.rotate(it.a);
+          ctx.save(); ctx.translate(px, py); ctx.rotate(ang);
           lines.forEach((l, i) => halo(ctx, l, 0, (i - (lines.length - 1) / 2) * fs * 1.1, Math.max(2.5, fs * 0.22), st.color, it.t === "e" ? 0.75 : 0.85));
           ctx.restore();
         }
@@ -429,6 +467,12 @@
     // ---------- Zoom ----------
     map.on("zoomend", () => { restyle(); restyleRoads(); });
     map.fitBounds(vb("westeros"), { paddingTopLeft: [window.innerWidth > 760 ? 320 : 0, 0] });
+    const startMode = new URLSearchParams(location.search).get("mode"); // lien direct vers un mode : cartes.html?mode=cultures
+    if (MODES.some(([k]) => k === startMode)) {
+      mode = startMode;
+      document.querySelectorAll("#map-modes button").forEach((x) => x.classList.toggle("active", x.dataset.m === mode));
+      legend();
+    }
     restyle(); restyleRoads(); labels._draw();
     const start = decodeURIComponent(location.hash.slice(1));
     if (T[start]) select(start);

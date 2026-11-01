@@ -209,8 +209,6 @@ tbody tr:hover { background: var(--surface-2); }
 #place-results span { color: var(--muted); font-size: .78rem; }
 .panel-title { margin: 4px 0 0; color: var(--muted); text-transform: uppercase; letter-spacing: .14em; font-size: .68rem; }
 .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.modes button:last-child { grid-column: span 2; }
-.modes button:nth-child(2) { grid-column: span 1; }
 .modes button, .views button, .map-actions button {
   font: inherit; font-size: .82rem; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 7px 6px; cursor: pointer;
 }
@@ -223,6 +221,21 @@ tbody tr:hover { background: var(--surface-2); }
 #layers input { accent-color: var(--gold); }
 .map-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .panel-more { margin: 0; color: var(--muted); font-size: .78rem; line-height: 1.5; }
+
+/* Legende des modes Cultures / Religions */
+.legend[hidden] { display: none; }
+.legend { display: flex; flex-direction: column; gap: 6px; }
+.legend .panel-title { margin: 0; }
+.legend-list { display: grid; gap: 2px; max-height: 230px; overflow-y: auto; padding-right: 4px; }
+.legend-list button {
+  display: grid; grid-template-columns: 12px 1fr auto; align-items: center; gap: 8px; width: 100%;
+  font: inherit; font-size: .8rem; text-align: left; color: #d5d0c6; background: none; border: 1px solid transparent; border-radius: 6px; padding: 4px 6px; cursor: pointer;
+}
+.legend-list button:hover { background: var(--surface); }
+.legend-list button.pinned { border-color: var(--gold); background: var(--gold-soft); color: #f3dfaf; }
+.legend-list i { width: 12px; height: 12px; border-radius: 3px; border: 1px solid rgba(0, 0, 0, .5); }
+.legend-list span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.legend-list b { color: var(--muted); font-weight: 500; font-size: .72rem; }
 
 /* Fiche d'information */
 .info-panel { right: 16px; width: 330px; padding: 0 0 14px; }
