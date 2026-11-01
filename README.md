@@ -21,13 +21,13 @@ Pour annuler une erreur : onglet **Commits**, ouvrez le commit fautif, puis reve
 | Le lore | `contenu/lore.md` |
 | Le règlement | `contenu/reglement.md` |
 | Le guide du RP passif | `contenu/rp-passif.md` (même mise en forme que le règlement) |
-| Les repères sur les cartes | `donnees/lieux.csv` |
-| Ajouter une carte | `images/` + liste `cartes` dans `config.js` |
+| Les lieux et maisons sur la carte | `donnees/lieux.csv` |
+| Les noms français de la carte | `donnees/carte-noms.csv` |
 | Le lien Discord, le nom, le menu | `config.js` |
 | Les effectifs des armées | `donnees/armees.csv` |
 | Les totaux de levée par région | `donnees/regions.csv` |
 | Les noms et prénoms | **Directement dans le Google Sheet** (voir plus bas) |
-| Une image de carte | `images/` (remplacer le fichier en gardant le même nom) |
+| Les cartes d'origine (images) | `images/` (remplacer le fichier en gardant le même nom) |
 | Le logo | `images/logo.png` (512x512) et `images/favicon.png` (64x64) |
 | Les couleurs | `assets/style.css` (variables en haut du fichier) |
 | Les textes de l'accueil | `index.html` |
@@ -66,17 +66,37 @@ Le Nord,Maison Stark,6400,5400,1000,,,
 Une case vide s'affiche « - ». Le nom de région doit être écrit exactement comme dans `donnees/regions.csv`.
 GitHub affiche les CSV sous forme de tableau, ce qui aide à vérifier.
 
-### Cartes interactives
+### Carte interactive (Westeros et Essos)
 
-Les cartes utilisent [Leaflet](https://leafletjs.com) : zoom à la molette ou au pincement, déplacement, plein écran,
-repères cliquables et recherche de lieu.
+La carte est dessinée à partir de données géographiques (GeoJSON) avec [Leaflet](https://leafletjs.com) :
+royaumes, cités, châteaux, ruines, routes, rivières, forêts, montagnes, mers et le Mur.
+Les fichiers géographiques sont dans `donnees/carte/` (pas besoin d'y toucher).
 
-Pour ajouter un repère :
-1. Sur la page Cartes, cliquez **Placer un repère**, puis cliquez à l'endroit voulu sur la carte.
-2. Une ligne est copiée automatiquement, par exemple `regions,Nom du lieu,Maison,Description,432,660`.
+**Rattacher une maison ou une description à un lieu existant** (`donnees/lieux.csv`) :
+
+```
+Lieu,Maison,Description,Lat,Lng
+Winterfell,Stark,Siège des seigneurs du Nord.,,
+```
+
+- `Lieu` : le nom du lieu, en VO ou en VF (comme affiché sur la carte).
+- `Maison` : écrite comme dans `donnees/armees.csv` sans le mot « Maison » (ex. `Ferboys`).
+  La fiche du lieu affiche alors automatiquement les levées, chevaliers et navires de la maison.
+- `Lat` et `Lng` : à laisser vides pour un lieu qui existe déjà sur la carte.
+
+**Ajouter un nouveau lieu** :
+1. Sur la page Carte, cliquez **Placer un repère**, puis cliquez à l'endroit voulu.
+2. Une ligne est copiée automatiquement, par exemple `Nom du lieu,Maison,Description,26.61,14.56`.
 3. Collez-la à la fin de `donnees/lieux.csv` et remplacez `Nom du lieu`, `Maison` et `Description`.
 
 Si un texte contient une virgule, mettez-le entre guillemets : `"Siège des Stark, gardiens du Nord"`.
+
+**Traduire un nom** (`donnees/carte-noms.csv`) : une ligne `Nom original,Nom français`.
+Les noms absents de ce fichier restent en VO.
+
+**Crédits obligatoires** : les données de la carte sont sous licence CC BY-NC-SA 3.0
+(cadaei, theMountainGoat, Tear, univers © G. R. R. Martin), voir `donnees/carte/LICENCE.txt`.
+Usage non commercial uniquement, et le crédit en bas de la carte doit rester affiché.
 
 ### Noms (Google Sheet en direct)
 

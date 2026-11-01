@@ -3,42 +3,44 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Cartes · Song of Westeros</title>
-  <meta name="description" content="Cartes interactives de Westeros : régions, ressources et routes commerciales.">
+  <title>Carte · Song of Westeros</title>
+  <meta name="description" content="Carte interactive de Westeros et d'Essos : royaumes, cités, châteaux, routes et maisons.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="assets/style.css?v=3">
+  <link rel="stylesheet" href="assets/style.css?v=4">
 </head>
 <body data-page="cartes">
 <main>
-  <div class="wrap">
-    <div class="map-layout">
-      <aside class="map-side">
-        <div>
-          <p class="eyebrow" style="margin-bottom:8px">Le royaume</p>
-          <h1>Cartes de Westeros</h1>
+  <div id="map-shell">
+    <div id="map"></div>
+    <aside class="map-panel" id="map-panel">
+      <button type="button" class="panel-toggle" id="panel-toggle" aria-controls="map-panel">Carte de Westeros et d'Essos</button>
+      <div class="panel-body">
+        <input class="search" id="place-search" type="search" placeholder="Rechercher un lieu (Winterfell, Braavos...)" autocomplete="off">
+        <div id="place-results"></div>
+        <div class="views" id="views">
+          <button type="button" data-v="westeros">Westeros</button>
+          <button type="button" data-v="essos">Essos</button>
+          <button type="button" data-v="monde">Monde connu</button>
         </div>
-        <div id="map-tabs" role="tablist" aria-label="Choix de la carte"></div>
-        <p id="map-desc"></p>
-        <input class="search" id="place-search" type="search" placeholder="Rechercher un lieu" autocomplete="off" hidden>
-        <div id="map-places"></div>
+        <p class="panel-title">Calques</p>
+        <div id="layers"></div>
+        <div class="legend">
+          <span><i class="dot city"></i>Cité</span><span><i class="dot town"></i>Ville</span><span><i class="dot seat"></i>Siège de maison</span><span><i class="dot castle"></i>Château</span><span><i class="dot ruin"></i>Ruine</span>
+        </div>
         <div class="map-actions">
           <button type="button" id="map-full">Plein écran</button>
-          <a id="map-open" target="_blank" rel="noopener" download>Télécharger</a>
           <button type="button" id="map-pick" title="Cliquez sur la carte pour obtenir la ligne à ajouter dans donnees/lieux.csv">Placer un repère</button>
         </div>
-      </aside>
-      <div id="map-shell">
-        <div id="map"></div>
-        <div class="map-help">Molette ou pincement pour zoomer, glisser pour se déplacer</div>
+        <p class="panel-more">Cartes d'origine : <a href="images/carte-regions.png" target="_blank">régions</a>, <a href="images/carte-economie.png" target="_blank">ressources</a>, <a href="images/carte-routes.png" target="_blank">routes commerciales</a></p>
       </div>
-    </div>
+    </aside>
   </div>
 </main>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="config.js?v=3"></script>
-<script src="assets/app.js?v=3"></script>
+<script src="config.js?v=4"></script>
+<script src="assets/app.js?v=4"></script>
 </body>
 </html>

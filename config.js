@@ -25,14 +25,6 @@ window.SOW = {
     { titre: "RP passif", lien: "rp-passif.html" },
     { titre: "Armées", lien: "armees.html" },
     { titre: "Noms", lien: "noms.html" },
-    { titre: "Cartes", lien: "cartes.html" },
-  ],
-
-  // Cartes interactives. "id" relie la carte aux repères de donnees/lieux.csv (colonne Carte).
-  // Pour ajouter une carte : déposer l'image dans images/ et ajouter une ligne ici.
-  cartes: [
-    { id: "regions", titre: "Régions et royaumes", image: "images/carte-regions.png", description: "Les neuf régions et leurs places fortes." },
-    { id: "economie", titre: "Productions et ressources", image: "images/carte-economie.png", description: "Mines, cultures, élevage et artisanat." },
-    { id: "routes", titre: "Routes commerciales", image: "images/carte-routes.png", description: "Routes, voies maritimes, ports et marchés." },
+    { titre: "Carte", lien: "cartes.html" },
   ],
 };
